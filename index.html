@@ -8,7 +8,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-```
+
     :root {
         --navy: #1e3c72;
         --navy-dark: #0f2b4f;
@@ -538,7 +538,7 @@
     </div>
     <div class="footer-note">公開後1週間でアラート表示。AI判定結果をコピペで反映できます</div>
 </div>
-```
+
 
 </div>
 
@@ -979,7 +979,7 @@ ${JSON.stringify(currentArticleData, null, 2)}`;
             <h3 style="margin-bottom:12px;font-size:16px;">${title}</h3>
             <textarea readonly style="width:100%;height:180px;padding:12px;border-radius:14px;border:1px solid #e2e8f0;font-family:monospace;font-size:13px;">${text}</textarea>
 
-```
+
         <div style="display:flex;gap:10px;margin-top:12px;">
             <button class="btn-primary" style="flex:1;" onclick="navigator.clipboard.writeText(\`${text.replace(/`/g, '\\`')}\`).then(()=>alert('コピーしました'))">📋 コピー</button>
             <button class="btn-secondary" onclick="this.closest('div').parentElement.remove()">閉じる</button>
@@ -1002,7 +1002,7 @@ window.showSingleCheckPrompt = function(company, code, price, direction) {
 判定: 【的中】 または 【はずれ】`, `${company} チェック用プロンプト`);
 };
 
-```
+
 function generateBatchCheckPrompt() {
     const pending = predictions.filter(p => p.status === 'pending');
     if (!pending.length) return alert('判定待ちの銘柄はありません');
@@ -1085,7 +1085,6 @@ document.getElementById('historyToggle').onclick = function() {
 };
 
 loadAllData();
-```
 
 </script>
 </body>
