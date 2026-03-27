@@ -272,7 +272,7 @@ const el = document.getElementById('usedHistoryList');
 if (!usedScenarios.length) { el.innerHTML = '<span style="color:#94a3b8;font-size:13px;">まだ使用履歴はありません</span>'; return; }
 el.innerHTML = usedScenarios.slice(0, 10).map(s => {
 const d = new Date(s.publishedAt);
-return '<div class="history-item"><strong>' + s.title.substring(0, 50) + (s.title.length > 50 ? '…' : '') + '</strong><div class="history-date">📅 ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString().slice(0,5) + '</div><div style="font-size:11px;color:#64748b;margin-top:2px;">🎯 ' + s.stocks + '</div></div>';
+return '<div class="history-item"><strong>' + s.title.substring(0, 50) + (s.title.length > 50 ? '...' : '') + '</strong><div class="history-date">📅 ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString().slice(0,5) + '</div><div style="font-size:11px;color:#64748b;margin-top:2px;">🎯 ' + s.stocks + '</div></div>';
 }).join('');
 }
 
@@ -297,7 +297,7 @@ setStep(1);
 // ─── シナリオ表示 ───────────────────────────────
 function displayScenarios(data) {
 if (!data.scenarios || data.scenarios.length < 2) { alert('シナリオが2つ以上見つかりませんでした。AIに再度依頼してください。'); return false; }
-multipleScenarios = data.scenarios.map(s => ({ …s, isUsed: isScenarioUsed(s.title, s.newsChain.map(n => n.headline).join(' → ')) }));
+multipleScenarios = data.scenarios.map(s => ({ ...s, isUsed: isScenarioUsed(s.title, s.newsChain.map(n => n.headline).join(' → ')) }));
 const allUsed = multipleScenarios.every(s => s.isUsed);
 const container = document.getElementById('scenarioList');
 if (allUsed) { container.innerHTML = '<div class="alert-banner" style="background:#fee2e2;border-left-color:#ef4444;">⚠️ 生成された3つのシナリオはすべて使用済みです。新しいプロンプトを生成してください。</div>'; return false; }
@@ -332,7 +332,7 @@ displayPreview(currentArticleData);
 document.getElementById('factCheckPrompt').value = '【ファクトチェック＆校正依頼】\n以下の記事データについて、記事生成AIとは別の視点でチェックしてください。\n\n【最重要】各銘柄の株価をYahooファイナンス（finance.yahoo.co.jp）でウェブ検索し、元のデータと比較してください。\n・currentPriceが実際の株価と一致しているか\n・株価が1000円未満であること（超えていたら別銘柄に変更）\n・証券コードが正しいか\n\n【その他チェック項目】\n・ニュースの因果関係に論理的矛盾がないか\n・比喩・擬人化が読者に伝わるか\n・1200字以上の文章量があるか\n\n修正がある場合は以下の形式で出力：\n{"revisedArticle": {修正後の記事データ}, "changes": "変更点の要約"}\n\n修正がない場合は：\n{"revisedArticle": ' + JSON.stringify(currentArticleData) + ', "changes": "修正なし"}\n\n元記事データ:\n' + JSON.stringify(currentArticleData, null, 2);
 
 // コンプライアンスチェックプロンプト
-document.getElementById('compliancePrompt').value = '【金融コンプライアンスチェック依頼】\n以下の記事データを金融商品取引法の観点でチェックしてください。\n\n【チェック項目】\n1. 断定的な投資判断を示す表現がないか（「必ず上がる」「確実に儲かる」など）\n2. 根拠のない株価予測をしていないか\n3. 特定銘柄への過度な推奨表現がないか\n4. 免責事項が適切か\n5. 風説の流布に該当する表現がないか\n\n【判定結果の出力形式】\n問題なし → "OK: 問題は見つかりませんでした"\n問題あり → "NG: （具体的な問題箇所と修正案）"\n\n記事データ:\nタイトル: ' + currentArticleData.title + '\nストーリー: ' + currentArticleData.causalStory.substring(0, 500) + '…\n銘柄: ' + currentArticleData.stocks.map(s => s.name + '(' + s.code + ') 予想:' + s.prediction).join(', ');
+document.getElementById('compliancePrompt').value = '【金融コンプライアンスチェック依頼】\n以下の記事データを金融商品取引法の観点でチェックしてください。\n\n【チェック項目】\n1. 断定的な投資判断を示す表現がないか（「必ず上がる」「確実に儲かる」など）\n2. 根拠のない株価予測をしていないか\n3. 特定銘柄への過度な推奨表現がないか\n4. 免責事項が適切か\n5. 風説の流布に該当する表現がないか\n\n【判定結果の出力形式】\n問題なし → "OK: 問題は見つかりませんでした"\n問題あり → "NG: （具体的な問題箇所と修正案）"\n\n記事データ:\nタイトル: ' + currentArticleData.title + '\nストーリー: ' + currentArticleData.causalStory.substring(0, 500) + '...\n銘柄: ' + currentArticleData.stocks.map(s => s.name + '(' + s.code + ') 予想:' + s.prediction).join(', ');
 
 document.getElementById('previewCard').style.display = 'block';
 document.getElementById('scenarioCard').style.display = 'none';
@@ -387,7 +387,7 @@ displayPreview(currentArticleData);
 document.getElementById('diffDisplay').style.display = 'block';
 document.getElementById('diffDisplay').innerHTML = '✍️ ' + (obj.changes || '修正が反映されました');
 // コンプライアンスプロンプトも更新
-document.getElementById('compliancePrompt').value = '【金融コンプライアンスチェック依頼】\n以下の記事データを金融商品取引法の観点でチェックしてください。\n\n【チェック項目】\n1. 断定的な投資判断を示す表現がないか\n2. 根拠のない株価予測をしていないか\n3. 特定銘柄への過度な推奨表現がないか\n4. 免責事項が適切か\n5. 風説の流布に該当する表現がないか\n\n問題なし → "OK: 問題は見つかりませんでした"\n問題あり → "NG: （具体的な問題箇所と修正案）"\n\nタイトル: ' + currentArticleData.title + '\nストーリー: ' + currentArticleData.causalStory.substring(0, 500) + '…';
+document.getElementById('compliancePrompt').value = '【金融コンプライアンスチェック依頼】\n以下の記事データを金融商品取引法の観点でチェックしてください。\n\n【チェック項目】\n1. 断定的な投資判断を示す表現がないか\n2. 根拠のない株価予測をしていないか\n3. 特定銘柄への過度な推奨表現がないか\n4. 免責事項が適切か\n5. 風説の流布に該当する表現がないか\n\n問題なし → "OK: 問題は見つかりませんでした"\n問題あり → "NG: （具体的な問題箇所と修正案）"\n\nタイトル: ' + currentArticleData.title + '\nストーリー: ' + currentArticleData.causalStory.substring(0, 500) + '...';
 } catch(e) { alert('校正JSONの読み込み失敗:\n' + e.message); }
 }
 
@@ -415,7 +415,7 @@ const openingMeta = (currentArticleData.metaphors && currentArticleData.metaphor
 
 // X用：要約版（140字目安）
 const storySnippet = currentArticleData.causalStory.replace(/\n/g, ' ').substring(0, 55);
-const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '…\n\n🎯 注目低位株: ' + stocksLine + '\n\nあなたは何点？👇\n#株初心者 #低位株 #桶屋理論 #日本株';
+const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '...\n\n🎯 注目低位株: ' + stocksLine + '\n\nあなたは何点？👇\n#株初心者 #低位株 #桶屋理論 #日本株';
 
 // note用：全文Markdown
 let note = '# ' + currentArticleData.title + '\n\n';
@@ -466,7 +466,7 @@ function generateSelfCheckPrompt(articleData, xText) {
 const panel = document.getElementById('selfCheckPanel');
 const content = document.getElementById('selfCheckContent');
 panel.style.display = 'block';
-const prompt = 'あなたはAI×SNSマネタイズコンサルタントです。以下の金融ブログ記事を5項目100点満点で採点してください。\n\n【記事タイトル】' + articleData.title + '\n【実現確率】' + articleData.probability + '%\n【比喩（冒頭）】' + ((articleData.metaphors && articleData.metaphors.opening) || articleData.metaphor || '') + '\n【ストーリー（冒頭200字）】' + articleData.causalStory.substring(0, 200) + '…\n【X投稿文】' + xText + '\n【注目銘柄】' + articleData.stocks.map(s => s.name + '(' + s.code + '): ' + s.reasoning).join(' / ') + '\n\n【採点項目】\n1. タイトル・フック力（読者が思わずタップしたくなるか）\n2. 比喩・擬人化のわかりやすさ（初心者でも理解できるか）\n3. X投稿のバズりやすさ（拡散・エンゲージメント）\n4. 因果関係の説得力・論理性\n5. マネタイズへの貢献度（フォロワー獲得・有料化への導線）\n\n各項目のスコアと改善ポイントを1文で、最後に総合スコアと最重要改善点を教えてください。';
+const prompt = 'あなたはAI×SNSマネタイズコンサルタントです。以下の金融ブログ記事を5項目100点満点で採点してください。\n\n【記事タイトル】' + articleData.title + '\n【実現確率】' + articleData.probability + '%\n【比喩（冒頭）】' + ((articleData.metaphors && articleData.metaphors.opening) || articleData.metaphor || '') + '\n【ストーリー（冒頭200字）】' + articleData.causalStory.substring(0, 200) + '...\n【X投稿文】' + xText + '\n【注目銘柄】' + articleData.stocks.map(s => s.name + '(' + s.code + '): ' + s.reasoning).join(' / ') + '\n\n【採点項目】\n1. タイトル・フック力（読者が思わずタップしたくなるか）\n2. 比喩・擬人化のわかりやすさ（初心者でも理解できるか）\n3. X投稿のバズりやすさ（拡散・エンゲージメント）\n4. 因果関係の説得力・論理性\n5. マネタイズへの貢献度（フォロワー獲得・有料化への導線）\n\n各項目のスコアと改善ポイントを1文で、最後に総合スコアと最重要改善点を教えてください。';
 content.innerHTML = '<p style="font-size:13px;opacity:0.85;margin-bottom:12px;line-height:1.6;">① 下のプロンプトをコピーしてAIに貼り付け<br>② 採点結果を下の欄に貼り付けると保存されます</p><textarea id="selfCheckPromptText" readonly style="width:100%;height:130px;padding:10px;border-radius:12px;border:none;font-size:12px;background:rgba(255,255,255,0.1);color:white;resize:none;">' + prompt + '</textarea><button onclick="copySelfCheckPrompt()" style="margin-top:8px;background:white;color:#1e3c72;border:none;border-radius:30px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;width:100%;">📋 チェック用プロンプトをコピー</button><div style="margin-top:14px;font-size:13px;opacity:0.8;margin-bottom:6px;">② AIの採点結果を貼り付け（任意）</div><textarea id="selfCheckResultInput" placeholder="AIの採点結果をここに貼り付け..." style="width:100%;height:80px;padding:10px;border-radius:12px;border:none;font-size:12px;background:rgba(255,255,255,0.1);color:white;resize:none;"></textarea><button onclick="saveSelfCheckResult()" style="margin-top:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:30px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;width:100%;">💾 採点結果を保存</button><div id="selfCheckSaved" style="display:none;margin-top:10px;font-size:13px;background:rgba(255,255,255,0.1);padding:10px;border-radius:10px;line-height:1.6;"></div>';
 }
 
@@ -497,7 +497,7 @@ predictions.map(p => '<div class="tracker-item"><div style="display:flex;justify
 function showModal(text, title) {
 const m = document.createElement('div');
 m.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;';
-const safeText = text.replace(/\/g, '\\').replace(/`/g, '\\`');
+const safeText = text.replace(/\\/g, '\\').replace(/`/g, '\\`');
 m.innerHTML = '<div style="background:white;border-radius:24px;max-width:500px;width:100%;padding:20px;"><h3 style="margin-bottom:12px;font-size:16px;">' + title + '</h3><textarea readonly style="width:100%;height:180px;padding:12px;border-radius:14px;border:1px solid #e2e8f0;font-family:monospace;font-size:13px;">' + text + '</textarea><div style="display:flex;gap:10px;margin-top:12px;"><button id="modalCopyBtn" style="flex:1;background:#1e3c72;color:white;border:none;border-radius:30px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">📋 コピー</button><button onclick="this.closest(\'div\').parentElement.remove()" style="background:#f1f5f9;color:#1e3c72;border:1px solid #cbd5e1;border-radius:30px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;">閉じる</button></div></div>';
 document.body.appendChild(m);
 document.getElementById('modalCopyBtn').onclick = async () => {
