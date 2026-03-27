@@ -297,7 +297,7 @@ setStep(1);
 // ─── シナリオ表示 ───────────────────────────────
 function displayScenarios(data) {
 if (!data.scenarios || data.scenarios.length < 2) { alert('シナリオが2つ以上見つかりませんでした。AIに再度依頼してください。'); return false; }
-multipleScenarios = data.scenarios.map(s => ({ ...s, isUsed: isScenarioUsed(s.title, s.newsChain.map(n => n.headline).join(' → ')) }));
+multipleScenarios = data.scenarios.map(s => ({ …s, isUsed: isScenarioUsed(s.title, s.newsChain.map(n => n.headline).join(' → ')) }));
 const allUsed = multipleScenarios.every(s => s.isUsed);
 const container = document.getElementById('scenarioList');
 if (allUsed) { container.innerHTML = '<div class="alert-banner" style="background:#fee2e2;border-left-color:#ef4444;">⚠️ 生成された3つのシナリオはすべて使用済みです。新しいプロンプトを生成してください。</div>'; return false; }
@@ -355,9 +355,18 @@ document.getElementById('articlePreview').innerHTML =
 '<div><strong style="font-size:14px;">🎯 注目の低位株（1000円未満）</strong>' + stocksHtml + '</div>';
 }
 
+// ─── JSON正規化（スマート引用符対策） ───────────
+function normalizeJSON(text) {
+return text
+.replace(/[""„‟]/g, '"')
+.replace(/[''‚‛]/g, "'")
+.replace(/ /g, ' ')
+.trim();
+}
+
 function loadArticleFromJson(jsonText) {
 let data;
-try { data = JSON.parse(jsonText); } catch(e) { alert('JSON解析エラー: ' + e.message); return; }
+try { data = JSON.parse(normalizeJSON(jsonText)); } catch(e) { alert('JSON解析エラー: ' + e.message); return; }
 if (data.scenarios && data.scenarios.length >= 2) {
 displayScenarios(data);
 document.getElementById('jsonCard').style.display = 'none';
@@ -367,7 +376,7 @@ document.getElementById('step1Card').style.display = 'none';
 
 // ─── 校正反映（柔軟対応） ───────────────────────
 function applyRevised() {
-const txt = document.getElementById('revisedJsonInput').value.trim();
+const txt = normalizeJSON(document.getElementById('revisedJsonInput').value);
 if (!txt) return alert('校正後AIの出力を貼り付けてください');
 try {
 const obj = JSON.parse(txt);
@@ -488,7 +497,7 @@ predictions.map(p => '<div class="tracker-item"><div style="display:flex;justify
 function showModal(text, title) {
 const m = document.createElement('div');
 m.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;';
-const safeText = text.replace(/\\/g, '\\').replace(/`/g, '\\`');
+const safeText = text.replace(/\/g, '\\').replace(/`/g, '\\`');
 m.innerHTML = '<div style="background:white;border-radius:24px;max-width:500px;width:100%;padding:20px;"><h3 style="margin-bottom:12px;font-size:16px;">' + title + '</h3><textarea readonly style="width:100%;height:180px;padding:12px;border-radius:14px;border:1px solid #e2e8f0;font-family:monospace;font-size:13px;">' + text + '</textarea><div style="display:flex;gap:10px;margin-top:12px;"><button id="modalCopyBtn" style="flex:1;background:#1e3c72;color:white;border:none;border-radius:30px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">📋 コピー</button><button onclick="this.closest(\'div\').parentElement.remove()" style="background:#f1f5f9;color:#1e3c72;border:1px solid #cbd5e1;border-radius:30px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;">閉じる</button></div></div>';
 document.body.appendChild(m);
 document.getElementById('modalCopyBtn').onclick = async () => {
