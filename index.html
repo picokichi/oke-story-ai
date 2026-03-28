@@ -59,7 +59,18 @@ textarea { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid #c
 .story-highlight { background: linear-gradient(135deg, #fef9e6, #fff4e0); border-left: 4px solid #f5b042; padding: 14px 16px; border-radius: 14px; margin: 12px 0; font-size: 15px; line-height: 1.7; }
 .metaphor-badge { background: #eef2ff; padding: 5px 12px; border-radius: 40px; display: inline-block; font-size: 12px; color: var(--navy); margin-bottom: 10px; font-weight: 600; }
 .news-item { background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 3px solid #cbd5e1; font-size: 14px; }
+.news-item.news-fresh { border-left-color: var(--green); }
+.news-item.news-old { border-left-color: var(--amber); }
+.news-age-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+.news-age-fresh { background: #dcfce7; color: #166534; }
+.news-age-old { background: #fef9c3; color: #854d0e; }
 .stock-card { background: #f8fafc; border-radius: 14px; padding: 14px; margin-top: 10px; border: 1px solid var(--border); font-size: 14px; }
+/* 織り込み判定パネル */
+.pricing-panel { background: linear-gradient(135deg, #eef2ff, #f0f4fa); border: 1px solid #c7d2fe; border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 13px; }
+.pricing-panel-title { font-weight: 700; font-size: 13px; color: var(--navy); margin-bottom: 6px; }
+.pricing-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 4px; line-height: 1.5; }
+.pricing-label { font-weight: 600; color: #4f46e5; min-width: 56px; font-size: 12px; }
+.stage-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; background: var(--navy); color: white; margin-top: 4px; }
 .tracker-item { background: white; border-radius: 14px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border); font-size: 14px; }
 .status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 .status-pending { background: #fef9c3; color: #854d0e; }
@@ -153,33 +164,21 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   <div id="articlePreview"></div>
   <hr>
 
-  <!-- ファクトチェック -->
+  <!-- ファクト＋コンプライアンス統合チェック -->
 
-  <div class="label">🔍 ファクトチェック用プロンプト（別AIに貼り付け）</div>
-  <textarea id="factCheckPrompt" rows="3" readonly></textarea>
+  <div class="label">🔍 ファクト＆コンプライアンスチェック用プロンプト（別AIに貼り付け）</div>
+  <div style="font-size:13px;color:#64748b;margin-bottom:8px;">ファクトチェックとコンプライアンス確認を1回のコピペで実施します</div>
+  <textarea id="factCheckPrompt" rows="4" readonly></textarea>
   <div class="flex-btns">
-    <button id="copyFactCheckBtn" class="btn-secondary">📋 コピー</button>
+    <button id="copyFactCheckBtn" class="btn-secondary">📋 コピー（1回で両方チェック）</button>
   </div>
-  <div class="label" style="margin-top:14px;">✍️ ファクトチェック後のAI出力を貼り付け</div>
-  <textarea id="revisedJsonInput" rows="4" placeholder='{"revisedArticle": {...}, "changes": "変更点"}'></textarea>
+
+  <div class="label" style="margin-top:14px;">✍️ AIの出力を貼り付け（ファクト＋コンプライアンス統合結果）</div>
+  <textarea id="revisedJsonInput" rows="4" placeholder='{"revisedArticle": {...}, "changes": "変更点", "complianceResult": "OK: 問題なし"}'></textarea>
   <div class="flex-btns">
-    <button id="applyRevisedBtn" class="btn-secondary">🔄 校正結果を反映してプレビュー更新</button>
+    <button id="applyRevisedBtn" class="btn-secondary">🔄 校正＆チェック結果を反映</button>
   </div>
   <div id="diffDisplay" style="display:none;" class="alert-banner"></div>
-
-  <hr>
-
-  <!-- コンプライアンスチェック -->
-
-  <div class="label">⚖️ コンプライアンスチェック（別AIに貼り付け）</div>
-  <div style="font-size:13px;color:#64748b;margin-bottom:8px;">金融商品取引法の観点で問題がないか、記事生成AIとは別のAIに確認させます</div>
-  <textarea id="compliancePrompt" rows="3" readonly></textarea>
-  <div class="flex-btns">
-    <button id="copyComplianceBtn" class="btn-secondary">📋 コピー</button>
-  </div>
-  <div class="label" style="margin-top:14px;">✍️ コンプライアンスチェック結果を貼り付け</div>
-  <textarea id="complianceResultInput" rows="3" placeholder="AIのチェック結果をここに貼り付け..."></textarea>
-  <button id="applyComplianceBtn" class="btn-secondary" style="margin-top:8px;">✅ 結果を反映</button>
   <div id="complianceDisplay" style="display:none;margin-top:8px;"></div>
 
   <hr>
@@ -239,12 +238,12 @@ let multipleScenarios = [];
 let usedScenarios = [];
 
 function saveAllData() {
-localStorage.setItem('oke_v9_tracker', JSON.stringify(predictions));
-localStorage.setItem('oke_v9_used', JSON.stringify(usedScenarios));
+localStorage.setItem('oke_v10_tracker', JSON.stringify(predictions));
+localStorage.setItem('oke_v10_used', JSON.stringify(usedScenarios));
 }
 function loadAllData() {
-predictions = JSON.parse(localStorage.getItem('oke_v9_tracker') || '[]');
-usedScenarios = JSON.parse(localStorage.getItem('oke_v9_used') || '[]');
+predictions = JSON.parse(localStorage.getItem('oke_v10_tracker') || '[]');
+usedScenarios = JSON.parse(localStorage.getItem('oke_v10_used') || '[]');
 renderTracker(); checkOneWeekAlerts(); renderUsedHistory();
 }
 
@@ -282,12 +281,118 @@ const due = predictions.filter(p => p.status === 'pending' && new Date(p.publish
 document.getElementById('alertArea').innerHTML = due.map(p => '<div class="alert-banner">⏰ <strong>判定時期です！</strong> ' + p.company + ' (' + p.code + ') 公開から1週間以上経過</div>').join('');
 }
 
-// ─── プロンプト生成（強化版） ───────────────────────
+// ─── ① プロンプト生成（ニュース選定ルール刷新 + ② 織り込み判定 + ③ ファクト＋コンプラ統合） ───
 function generatePrompt() {
 const usedTitles = usedScenarios.map(s => s.title).join('、');
-const avoidNote = usedScenarios.length > 0 ? '\n【重要】以下のシナリオは使用済みです。これらと異なる因果関係を生成してください：\n' + usedTitles + '\n' : '';
+const avoidNote = usedScenarios.length > 0
+? '\n【重要】以下のシナリオは使用済みです。これらと異なる因果関係を生成してください：\n' + usedTitles + '\n'
+: '';
 
-const prompt = '【あなたの役割】\n人気金融ブロガー。難解な経済ニュースを「なるほど！これ友達に話したい」と思わせるストーリーに変換するのが得意。比喩と擬人化を武器に、初心者でも膝を打つ記事を書く。\n' + avoidNote + '\n【タスク】\n過去24時間以内の世界情勢・金融ニュースをウェブ検索で調査し、3つの異なる因果関係の連鎖をそれぞれ独立した記事として生成してください。\n\n【3つの記事はすべて異なるニュース起点】\n記事A: 例）原油価格下落 → 物流コスト減 → 輸入品値下げ → 企業A\n記事B: 例）金利上昇 → 円高進行 → インバウンド需要変化 → 企業B\n記事C: 例）半導体不足解消 → 自動車生産回復 → 部品メーカー好転 → 企業C\n\n【各記事の構成ルール】\n\n■ タイトル（必須ルール）\n・数字または逆説表現を必ず含める\n・例：「原油が下がると、なぜか〇〇が上がる3つの理由」\n・例：「専門家が見落とす、この1本のニュースが日本株を動かす」\n\n■ 比喩・擬人化（3箇所に必ず配置）\n・冒頭：読者を引き込む比喩（例：「原油は今、高熱で倒れた巨人だ」）\n・中盤：因果関係の転換点で使う比喩\n・締め：記事の余韻として残る比喩\n\n■ ストーリー本文（1200〜1500字）\n以下の構成で書くこと：\n1. 冒頭フック（2〜3文）：読者が「え、なに？」と前のめりになる驚きの事実や問いかけ\n2. ニュースの説明（各ニュースを2〜3文で丁寧に）\n3. 因果関係の展開：なぜAがBを引き起こし、BがCになるのかをステップごとに説明\n4. クライマックス：なぜこの銘柄に注目するのか、感情を動かす言葉で\n5. 締め：読者への問いかけで終わる\n\n■ 文体ルール\n・語尾は「〜かもしれない」「〜と読む」「〜ではないだろうか」など推測調\n・断定は避け、読者の想像力を刺激する\n・専門用語を使う場合は必ず一言で説明する\n\n■ シナリオ実現確率（%）と根拠を1文で\n\n■ 注目低位株（株価1000円未満）1〜2社\n・必ずYahooファイナンス（finance.yahoo.co.jp）をウェブ検索して最新株価を確認\n・記憶や学習データの株価は使用禁止\n・株価が1000円以上の場合はその銘柄を除外して別の銘柄を選ぶ\n・証券コードも必ずウェブ検索で確認する\n\n■ 株価の数値は記事本文に記載しない（トラッカー用として内部保持のみ）\n\n【出力形式】JSON形式のみで出力。説明文不要。\n{\n  "scenarios": [\n    {\n      "title": "記事タイトル（数字または逆説を含む）",\n      "probability": 65,\n      "probabilityReason": "確率の根拠を1文で",\n      "metaphors": {\n        "opening": "冒頭の比喩",\n        "middle": "中盤の比喩",\n        "closing": "締めの比喩"\n      },\n      "newsChain": [\n        {"headline": "ニュース1", "detail": "詳細（2〜3文）", "source": "メディア名"},\n        {"headline": "ニュース2", "detail": "詳細", "source": "メディア名"}\n      ],\n      "causalStory": "因果関係のストーリー本文（1200〜1500字、上記の構成ルールに従う）",\n      "stocks": [\n        {\n          "name": "企業名",\n          "code": "証券コード（ウェブ検索で確認済み）",\n          "currentPrice": 株価（数値のみ、ウェブ検索で確認済み）,\n          "prediction": "up",\n          "reasoning": "選出理由（低位株である理由・因果関係との接点を含める）"\n        }\n      ]\n    }\n  ]\n}\nscenarios配列に3つの独立した記事を入れてください。';
+const prompt =
+`【あなたの役割】 人気金融ブロガー。難解な経済ニュースを「なるほど！これ友達に話したい」と思わせるストーリーに変換するのが得意。比喩と擬人化を武器に、初心者でも膝を打つ記事を書く。 ` + avoidNote + `
+【タスク】
+ウェブ検索で以下のルールに従いニュースを収集し、3つの異なる因果関係の連鎖をそれぞれ独立した記事として生成してください。
+
+【★ニュース選定ルール（必須）★】
+各記事のニュース連鎖は以下のルールで構成すること：
+
+1. 過去24時間以内のニュースを必ず1つ以上含める（これがトリガーとなる）
+1. 追加で最大2つまで、3〜7日以内の関連ニュースを選定してもよい
+1. 因果関係が成立しない古いニュースは除外する
+1. ニュース同士の関係性を「原因→結果」で明示すること
+1. 各ニュースには公開日時（例：3月27日）とニュース鮮度（"fresh"=24時間以内 / "background"=3〜7日以内）を必ず付記する
+
+【3つの記事はすべて異なるニュース起点】
+記事A: 例）原油価格下落（昨日）→ 物流コスト減（3日前の分析）→ 輸入品値下げ → 企業A
+記事B: 例）金利上昇（本日）→ 円高進行（5日前から続く動き）→ 企業B
+記事C: 例）半導体関連政策発表（昨日）→ 部品メーカー受注増（4日前のレポート）→ 企業C
+
+【各記事の構成ルール】
+
+■ タイトル（必須ルール）
+・数字または逆説表現を必ず含める
+・例：「原油が下がると、なぜか〇〇が上がる3つの理由」
+
+■ 比喩・擬人化（3箇所に必ず配置）
+・冒頭：読者を引き込む比喩
+・中盤：因果関係の転換点で使う比喩
+・締め：記事の余韻として残る比喩
+
+■ ストーリー本文（1200〜1500字）
+
+1. 冒頭フック（2〜3文）
+1. ニュースの説明（各ニュースを2〜3文で丁寧に）
+1. 因果関係の展開：なぜAがBを引き起こし、BがCになるのかをステップごとに説明
+1. クライマックス：なぜこの銘柄に注目するのか、感情を動かす言葉で
+1. 締め：読者への問いかけで終わる
+
+■ 文体ルール
+・語尾は「〜かもしれない」「〜と読む」「〜ではないだろうか」など推測調
+・断定は避け、読者の想像力を刺激する
+・専門用語を使う場合は必ず一言で説明する
+
+■ シナリオ実現確率（%）と根拠を1文で
+
+■ 注目低位株（株価1000円未満）1〜2社
+・必ずYahooファイナンス（finance.yahoo.co.jp）をウェブ検索して最新株価を確認
+・記憶や学習データの株価は使用禁止
+・株価が1000円以上の場合はその銘柄を除外して別の銘柄を選ぶ
+・証券コードも必ずウェブ検索で確認する
+
+■ 株価の数値は記事本文に記載しない（トラッカー用として内部保持のみ）
+
+【★② 織り込み判定（必須）★】
+各銘柄の選出理由（reasoning）の中に、以下4点を自然な文章として組み込むこと：
+
+1. 価格反応：関連セクター・銘柄がすでに動いているかを確認し、「織り込み済み or 未織り込み」を判断する
+1. 時間軸：ニュースの初出タイミングを確認し、鮮度を評価する
+1. 市場の広がり：テーマが市場全体に広がっているか、一部に留まっているかを分析する
+1. 結論：「今は初動・中盤・終盤のどこか」を明示する
+
+例）「○○セクターはまだ株価に反応が薄く未織り込みと判断。ニュースの初出は昨日で鮮度は高い。テーマはまだ一部の専門家の間に留まっており、市場全体への広がりはこれからとみられる。現時点では初動フェーズと読む。」
+
+【出力形式】JSON形式のみで出力。説明文不要。
+{
+"scenarios": [
+{
+"title": "記事タイトル（数字または逆説を含む）",
+"probability": 65,
+"probabilityReason": "確率の根拠を1文で",
+"metaphors": {
+"opening": "冒頭の比喩",
+"middle": "中盤の比喩",
+"closing": "締めの比喩"
+},
+"newsChain": [
+{
+"headline": "ニュース1（トリガー：24時間以内）",
+"detail": "詳細（2〜3文）",
+"source": "メディア名",
+"publishedDate": "3月27日",
+"freshness": "fresh"
+},
+{
+"headline": "ニュース2（背景：3〜7日以内）",
+"detail": "詳細",
+"source": "メディア名",
+"publishedDate": "3月24日",
+"freshness": "background"
+}
+],
+"causalStory": "因果関係のストーリー本文（1200〜1500字、上記の構成ルールに従う）",
+"stocks": [
+{
+"name": "企業名",
+"code": "証券コード（ウェブ検索で確認済み）",
+"currentPrice": 株価（数値のみ、ウェブ検索で確認済み）,
+"prediction": "up",
+"reasoning": "選出理由。織り込み判定（価格反応・時間軸・市場の広がり・初動/中盤/終盤の結論）を自然な文章で含める"
+}
+]
+}
+]
+}
+scenarios配列に3つの独立した記事を入れてください。`;
 
 document.getElementById('promptOutput').value = prompt;
 document.getElementById('promptArea').style.display = 'block';
@@ -301,7 +406,22 @@ multipleScenarios = data.scenarios.map(s => ({ ...s, isUsed: isScenarioUsed(s.ti
 const allUsed = multipleScenarios.every(s => s.isUsed);
 const container = document.getElementById('scenarioList');
 if (allUsed) { container.innerHTML = '<div class="alert-banner" style="background:#fee2e2;border-left-color:#ef4444;">⚠️ 生成された3つのシナリオはすべて使用済みです。新しいプロンプトを生成してください。</div>'; return false; }
-container.innerHTML = multipleScenarios.map((s, idx) => '<div class="scenario-card ' + (s.isUsed ? 'used' : '') + '" data-idx="' + idx + '"><div class="scenario-header"><div class="scenario-title">📖 ' + s.title + '</div></div><div class="probability ' + (s.probability < 50 ? 'probability-low' : '') + '">実現確率 ' + s.probability + '%</div><div class="scenario-chain">🔗 ' + s.newsChain.map(n => n.headline).join(' → ') + '</div><div class="scenario-metaphor">💡 ' + ((s.metaphors && s.metaphors.opening) || s.metaphor || '') + '</div><div class="scenario-stocks">🎯 注目銘柄: ' + s.stocks.map(st => st.name + '(' + st.code + ')').join(', ') + '</div></div>').join('');
+container.innerHTML = multipleScenarios.map((s, idx) => {
+// ニュース連鎖：鮮度バッジ付き
+const chainHtml = s.newsChain.map(n => {
+const badge = n.freshness === 'fresh'
+? '<span class="news-age-badge news-age-fresh">🟢 24h以内</span>'
+: (n.freshness === 'background' ? '<span class="news-age-badge news-age-old">🟡 3〜7日前</span>' : '');
+return n.headline + badge;
+}).join(' → ');
+return '<div class="scenario-card ' + (s.isUsed ? 'used' : '') + '" data-idx="' + idx + '">' +
+'<div class="scenario-header"><div class="scenario-title">📖 ' + s.title + '</div></div>' +
+'<div class="probability ' + (s.probability < 50 ? 'probability-low' : '') + '">実現確率 ' + s.probability + '%</div>' +
+'<div class="scenario-chain">🔗 ' + chainHtml + '</div>' +
+'<div class="scenario-metaphor">💡 ' + ((s.metaphors && s.metaphors.opening) || s.metaphor || '') + '</div>' +
+'<div class="scenario-stocks">🎯 注目銘柄: ' + s.stocks.map(st => st.name + '(' + st.code + ')').join(', ') + '</div>' +
+'</div>';
+}).join('');
 document.querySelectorAll('.scenario-card:not(.used)').forEach(card => {
 card.onclick = () => {
 document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
@@ -328,11 +448,39 @@ probability: s.probability, probabilityReason: s.probabilityReason || ''
 
 displayPreview(currentArticleData);
 
-// ファクトチェックプロンプト（別AI向け・株価確認強化）
-document.getElementById('factCheckPrompt').value = '【ファクトチェック＆校正依頼】\n以下の記事データについて、記事生成AIとは別の視点でチェックしてください。\n\n【最重要】各銘柄の株価をYahooファイナンス（finance.yahoo.co.jp）でウェブ検索し、元のデータと比較してください。\n・currentPriceが実際の株価と一致しているか\n・株価が1000円未満であること（超えていたら別銘柄に変更）\n・証券コードが正しいか\n\n【その他チェック項目】\n・ニュースの因果関係に論理的矛盾がないか\n・比喩・擬人化が読者に伝わるか\n・1200字以上の文章量があるか\n\n修正がある場合は以下の形式で出力：\n{"revisedArticle": {修正後の記事データ}, "changes": "変更点の要約"}\n\n修正がない場合は：\n{"revisedArticle": ' + JSON.stringify(currentArticleData) + ', "changes": "修正なし"}\n\n元記事データ:\n' + JSON.stringify(currentArticleData, null, 2);
+// ③ ファクト＋コンプライアンス統合プロンプト
+document.getElementById('factCheckPrompt').value =
+`【ファクト＆コンプライアンス統合チェック依頼】
+以下の記事データについて、①ファクトチェックと②コンプライアンス確認を同時に行ってください。
 
-// コンプライアンスチェックプロンプト
-document.getElementById('compliancePrompt').value = '【金融コンプライアンスチェック依頼】\n以下の記事データを金融商品取引法の観点でチェックしてください。\n\n【チェック項目】\n1. 断定的な投資判断を示す表現がないか（「必ず上がる」「確実に儲かる」など）\n2. 根拠のない株価予測をしていないか\n3. 特定銘柄への過度な推奨表現がないか\n4. 免責事項が適切か\n5. 風説の流布に該当する表現がないか\n\n【判定結果の出力形式】\n問題なし → "OK: 問題は見つかりませんでした"\n問題あり → "NG: （具体的な問題箇所と修正案）"\n\n記事データ:\nタイトル: ' + currentArticleData.title + '\nストーリー: ' + currentArticleData.causalStory.substring(0, 500) + '...\n銘柄: ' + currentArticleData.stocks.map(s => s.name + '(' + s.code + ') 予想:' + s.prediction).join(', ');
+═══ ① ファクトチェック ═══
+【最重要】各銘柄の株価をYahooファイナンス（finance.yahoo.co.jp）でウェブ検索し確認：
+・currentPriceが実際の株価と一致しているか
+・株価が1000円未満であること（超えていたら別銘柄に変更）
+・証券コードが正しいか
+
+その他チェック項目：
+・ニュースの因果関係に論理的矛盾がないか
+・newsChainの各ニュースがfreshness（24h以内/3〜7日以内）の分類通りか
+・比喩・擬人化が読者に伝わるか
+・1200字以上の文章量があるか
+
+═══ ② コンプライアンスチェック（SNS個人発信・緩め基準） ═══
+以下の2点のみ確認：
+
+1. 「必ず上がる」「確実に儲かる」など断定的な投資推奨表現がないか
+1. 根拠のない噂・虚偽情報を流す風説の流布に該当する表現がないか
+   ※免責事項の有無は不問。個人SNS発信として許容範囲で判断。
+
+═══ 出力形式 ═══
+修正がある場合：
+{"revisedArticle": {修正後の記事データ}, "changes": "変更点の要約", "complianceResult": "OK または NG: 問題箇所と修正案"}
+
+修正がない場合：
+{"revisedArticle": ${JSON.stringify(currentArticleData)}, "changes": "修正なし", "complianceResult": "OK: 問題は見つかりませんでした"}
+
+元記事データ:
+${JSON.stringify(currentArticleData, null, 2)}`;
 
 document.getElementById('previewCard').style.display = 'block';
 document.getElementById('scenarioCard').style.display = 'none';
@@ -340,27 +488,61 @@ setStep(3);
 window.scrollTo({ top: document.getElementById('previewCard').offsetTop - 20, behavior: 'smooth' });
 }
 
+// ─── プレビュー表示（鮮度バッジ＋織り込み判定パネル対応） ───
 function displayPreview(data) {
 const openingMeta = (data.metaphors && data.metaphors.opening) || data.metaphor || '';
 const middleMeta = (data.metaphors && data.metaphors.middle) || '';
-const newsHtml = (data.newsChain || []).map(n => '<div class="news-item"><strong>📌 ' + n.headline + '</strong><br>' + n.detail + (n.source ? '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">📰 ' + n.source + '</div>' : '') + '</div>').join('');
-const stocksHtml = (data.stocks || []).map(s => '<div class="stock-card"><strong>' + s.name + ' (' + s.code + ')</strong><span class="tag">株価1000円未満の低位株</span><br>' + (s.prediction === 'up' ? '📈 上昇予想' : '📉 下落予想') + '<br><span style="color:#475569;">📖 ' + s.reasoning + '</span></div>').join('');
+
+// ニュース連鎖：鮮度バッジ付き
+const newsHtml = (data.newsChain || []).map(n => {
+const freshClass = n.freshness === 'fresh' ? 'news-fresh' : (n.freshness === 'background' ? 'news-old' : '');
+const freshBadge = n.freshness === 'fresh'
+? '<span class="news-age-badge news-age-fresh">🟢 24h以内（トリガー）</span>'
+: (n.freshness === 'background' ? '<span class="news-age-badge news-age-old">🟡 3〜7日前（背景）</span>' : '');
+return '<div class="news-item ' + freshClass + '"><strong>📌 ' + n.headline + '</strong>' + freshBadge +
+(n.publishedDate ? '<span style="font-size:11px;color:#94a3b8;margin-left:6px;">📅 ' + n.publishedDate + '</span>' : '') +
+'<br>' + n.detail +
+(n.source ? '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">📰 ' + n.source + '</div>' : '') + '</div>';
+}).join('');
+
+// 注目銘柄：織り込み判定をパネルとして表示
+const stocksHtml = (data.stocks || []).map(s => {
+// reasoningから織り込み判定キーワードを検出してハイライト
+const reasoning = s.reasoning || '';
+const stageMatch = reasoning.match(/初動|中盤|終盤/);
+const stageBadge = stageMatch ? '<span class="stage-badge">📍 ' + stageMatch[0] + 'フェーズ</span>' : '';
+const pricingMatch = reasoning.match(/未織り込み|織り込み済み/);
+const pricingBadge = pricingMatch
+? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;background:' +
+(pricingMatch[0] === '未織り込み' ? '#dcfce7;color:#166534' : '#fef9c3;color:#854d0e') +
+';">' + pricingMatch[0] + '</span>'
+: '';
+return '<div class="stock-card">' +
+'<strong>' + s.name + ' (' + s.code + ')</strong><span class="tag">株価1000円未満の低位株</span><br>' +
+(s.prediction === 'up' ? '📈 上昇予想' : '📉 下落予想') +
+'<div class="pricing-panel" style="margin-top:10px;">' +
+'<div class="pricing-panel-title">📊 織り込み判定</div>' +
+'<div style="font-size:13px;color:#334155;line-height:1.7;">' + reasoning + '</div>' +
+'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">' + pricingBadge + stageBadge + '</div>' +
+'</div></div>';
+}).join('');
+
 document.getElementById('articlePreview').innerHTML =
 (data.probability ? '<div style="background:var(--green);color:white;padding:5px 14px;border-radius:30px;display:inline-block;margin-bottom:12px;font-size:13px;font-weight:700;">🎲 実現確率 ' + data.probability + '%' + (data.probabilityReason ? '｜' + data.probabilityReason : '') + '</div>' : '') +
 '<div class="metaphor-badge">✨ 冒頭の比喩</div>' +
 '<div class="story-highlight">' + openingMeta.replace(/\n/g, '<br>') + '</div>' +
 (middleMeta ? '<div class="metaphor-badge" style="margin-top:8px;">💡 中盤の比喩</div><div class="story-highlight">' + middleMeta + '</div>' : '') +
-(newsHtml ? '<div style="margin:14px 0;"><strong style="font-size:14px;">📰 ニュース連鎖</strong><div style="margin-top:8px;">' + newsHtml + '</div></div>' : '') +
+(newsHtml ? '<div style="margin:14px 0;"><strong style="font-size:14px;">📰 ニュース連鎖</strong><div style="font-size:12px;color:#64748b;margin:4px 0 8px;">🟢 24h以内のニュースがトリガー　🟡 3〜7日以内が背景</div><div>' + newsHtml + '</div></div>' : '') +
 '<div style="margin:14px 0;"><strong style="font-size:14px;">🏺 ストーリー</strong><p style="margin-top:8px;font-size:14px;line-height:1.8;">' + (data.causalStory || '').replace(/\n/g, '<br>') + '</p></div>' +
 '<div><strong style="font-size:14px;">🎯 注目の低位株（1000円未満）</strong>' + stocksHtml + '</div>';
 }
 
-// ─── JSON正規化（スマート引用符対策） ───────────
+// ─── JSON正規化 ───────────────────────────────────
 function normalizeJSON(text) {
 return text
 .replace(/[""„‟]/g, '"')
 .replace(/[''‚‛]/g, "'")
-.replace(/ /g, ' ')
+.replace(/ /g, ' ')
 .trim();
 }
 
@@ -374,37 +556,39 @@ document.getElementById('step1Card').style.display = 'none';
 } else { alert('JSONに scenarios フィールド（2件以上）が必要です。'); }
 }
 
-// ─── 校正反映（柔軟対応） ───────────────────────
+// ─── ③ 校正＋コンプライアンス統合反映 ───────────────
 function applyRevised() {
 const txt = normalizeJSON(document.getElementById('revisedJsonInput').value);
-if (!txt) return alert('校正後AIの出力を貼り付けてください');
+if (!txt) return alert('AIの出力を貼り付けてください');
 try {
 const obj = JSON.parse(txt);
 const revised = obj.revisedArticle || (obj.stocks ? obj : null);
-if (!revised) throw new Error('JSONの形式が正しくありません。\n\nAIへの指示：\n「{"revisedArticle": {記事データ}, "changes": "変更点"} の形式で出力してください」');
+if (!revised) throw new Error('JSONの形式が正しくありません。\n\nAIへの指示：\n{"revisedArticle": {記事データ}, "changes": "変更点", "complianceResult": "OK または NG: ..."} の形式で出力してください');
 currentArticleData = revised;
 displayPreview(currentArticleData);
+
+```
+// 変更点表示
 document.getElementById('diffDisplay').style.display = 'block';
 document.getElementById('diffDisplay').innerHTML = '✍️ ' + (obj.changes || '修正が反映されました');
-// コンプライアンスプロンプトも更新
-document.getElementById('compliancePrompt').value = '【金融コンプライアンスチェック依頼】\n以下の記事データを金融商品取引法の観点でチェックしてください。\n\n【チェック項目】\n1. 断定的な投資判断を示す表現がないか\n2. 根拠のない株価予測をしていないか\n3. 特定銘柄への過度な推奨表現がないか\n4. 免責事項が適切か\n5. 風説の流布に該当する表現がないか\n\n問題なし → "OK: 問題は見つかりませんでした"\n問題あり → "NG: （具体的な問題箇所と修正案）"\n\nタイトル: ' + currentArticleData.title + '\nストーリー: ' + currentArticleData.causalStory.substring(0, 500) + '...';
-} catch(e) { alert('校正JSONの読み込み失敗:\n' + e.message); }
+
+// コンプライアンス結果表示（統合）
+const compResult = obj.complianceResult || '';
+const compDisplay = document.getElementById('complianceDisplay');
+if (compResult) {
+  compDisplay.style.display = 'block';
+  if (compResult.startsWith('OK') || compResult.includes('問題は見つかりません')) {
+    compDisplay.innerHTML = '<div class="compliance-ok">✅ コンプライアンス: ' + compResult + '</div>';
+  } else {
+    compDisplay.innerHTML = '<div class="compliance-ng">⚠️ コンプライアンス: ' + compResult.replace(/\n/g, '<br>') + '</div>';
+  }
+}
+```
+
+} catch(e) { alert('JSONの読み込み失敗:\n' + e.message); }
 }
 
-// ─── コンプライアンス結果反映 ─────────────────────
-function applyCompliance() {
-const result = document.getElementById('complianceResultInput').value.trim();
-if (!result) return alert('チェック結果を貼り付けてください');
-const display = document.getElementById('complianceDisplay');
-display.style.display = 'block';
-if (result.startsWith('OK') || result.includes('問題は見つかりません')) {
-display.innerHTML = '<div class="compliance-ok">✅ ' + result + '</div>';
-} else {
-display.innerHTML = '<div class="compliance-ng">⚠️ ' + result.replace(/\n/g, '<br>') + '</div>';
-}
-}
-
-// ─── 公開承認 ─────────────────────────────────
+// ─── 公開承認 ─────────────────────────────────────
 function approveFinal() {
 if (!currentArticleData) return alert('記事がありません');
 markScenarioAsUsed(currentArticleData);
@@ -413,18 +597,24 @@ const stocksLine = stocks.map(s => s.name + '(' + s.code + ')').join(' / ');
 const prob = currentArticleData.probability || '?';
 const openingMeta = (currentArticleData.metaphors && currentArticleData.metaphors.opening) || currentArticleData.metaphor || '';
 
-// X用：要約版（140字目安）
+// X用：要約版
 const storySnippet = currentArticleData.causalStory.replace(/\n/g, ' ').substring(0, 55);
 const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '...\n\n🎯 注目低位株: ' + stocksLine + '\n\nあなたは何点？👇\n#株初心者 #低位株 #桶屋理論 #日本株';
 
-// note用：全文Markdown
+// note用：全文Markdown（織り込み判定を選出理由に含める）
 let note = '# ' + currentArticleData.title + '\n\n';
 note += '> 🎲 **実現確率: ' + prob + '%**' + (currentArticleData.probabilityReason ? '｜' + currentArticleData.probabilityReason : '') + '\n\n';
 note += '—\n\n';
 note += '## ✨ まず、この比喩から\n\n' + openingMeta + '\n\n';
 if (currentArticleData.newsChain) {
 note += '## 📰 ニュースの連鎖\n\n';
-currentArticleData.newsChain.forEach(n => { note += '### ' + n.headline + '\n' + n.detail + '\n' + (n.source ? '（出典: ' + n.source + '）' : '') + '\n\n'; });
+currentArticleData.newsChain.forEach(n => {
+const freshLabel = n.freshness === 'fresh' ? '🟢 24h以内（トリガー）' : (n.freshness === 'background' ? '🟡 3〜7日前（背景）' : '');
+note += '### ' + n.headline + (freshLabel ? ' ' + freshLabel : '') + '\n' +
+n.detail + '\n' +
+(n.publishedDate ? '公開日: ' + n.publishedDate + '　' : '') +
+(n.source ? '（出典: ' + n.source + '）' : '') + '\n\n';
+});
 }
 if (currentArticleData.metaphors && currentArticleData.metaphors.middle) {
 note += '—\n\n> ' + currentArticleData.metaphors.middle + '\n\n—\n\n';
@@ -432,7 +622,15 @@ note += '—\n\n> ' + currentArticleData.metaphors.middle + '\n\n—\n\n';
 note += '## 📖 因果関係のストーリー\n\n' + currentArticleData.causalStory + '\n\n';
 note += '## 🎯 注目の低位株（株価1000円未満）\n\n';
 note += '> ※低位株とは株価1000円未満の銘柄。少額から投資しやすく、上昇時の％インパクトが大きい特徴があります。\n\n';
-stocks.forEach(s => { note += '### ' + s.name + '（' + s.code + '）\n- **予想**: ' + (s.prediction === 'up' ? '上昇期待 📈' : '下落警戒 📉') + '\n- **選出理由**: ' + s.reasoning + '\n\n'; });
+stocks.forEach(s => {
+const stageMatch = (s.reasoning || '').match(/初動|中盤|終盤/);
+const pricingMatch = (s.reasoning || '').match(/未織り込み|織り込み済み/);
+note += '### ' + s.name + '（' + s.code + '）\n' +
+'- **予想**: ' + (s.prediction === 'up' ? '上昇期待 📈' : '下落警戒 📉') + '\n' +
+(pricingMatch ? '- **織り込み**: ' + pricingMatch[0] + '\n' : '') +
+(stageMatch ? '- **フェーズ**: ' + stageMatch[0] + '\n' : '') +
+'- **選出理由＆織り込み判定**: ' + s.reasoning + '\n\n';
+});
 note += '—\n\n';
 note += '💬 **あなたはこのシナリオ、何点だと思いますか？** コメントで教えてください！\n\n';
 note += '⚠️ *この記事はAIが生成した情報です。投資判断はご自身の責任でお願いします。株式投資にはリスクが伴います。過去の実績は将来の成果を保証するものではありません。*';
@@ -442,7 +640,6 @@ document.getElementById('noteOutput').value = note;
 document.getElementById('finalOutputCard').style.display = 'block';
 setStep(4);
 
-// Xボタン設定
 document.getElementById('openXBtn').onclick = () => {
 const encoded = encodeURIComponent(xContent);
 window.open('https://twitter.com/intent/tweet?text=' + encoded, '_blank');
@@ -455,13 +652,11 @@ predictions.push({ id: Date.now() + Math.random(), company: s.name, code: s.code
 }
 });
 saveAllData(); renderTracker();
-
-// セルフチェックプロンプト生成
 generateSelfCheckPrompt(currentArticleData, xContent);
 window.scrollTo({ top: document.getElementById('finalOutputCard').offsetTop - 20, behavior: 'smooth' });
 }
 
-// ─── セルフチェック（コピペ方式） ─────────────────
+// ─── セルフチェック ───────────────────────────────
 function generateSelfCheckPrompt(articleData, xText) {
 const panel = document.getElementById('selfCheckPanel');
 const content = document.getElementById('selfCheckContent');
@@ -497,7 +692,6 @@ predictions.map(p => '<div class="tracker-item"><div style="display:flex;justify
 function showModal(text, title) {
 const m = document.createElement('div');
 m.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;';
-const safeText = text.replace(/\\/g, '\\').replace(/`/g, '\\`');
 m.innerHTML = '<div style="background:white;border-radius:24px;max-width:500px;width:100%;padding:20px;"><h3 style="margin-bottom:12px;font-size:16px;">' + title + '</h3><textarea readonly style="width:100%;height:180px;padding:12px;border-radius:14px;border:1px solid #e2e8f0;font-family:monospace;font-size:13px;">' + text + '</textarea><div style="display:flex;gap:10px;margin-top:12px;"><button id="modalCopyBtn" style="flex:1;background:#1e3c72;color:white;border:none;border-radius:30px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">📋 コピー</button><button onclick="this.closest(\'div\').parentElement.remove()" style="background:#f1f5f9;color:#1e3c72;border:1px solid #cbd5e1;border-radius:30px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;">閉じる</button></div></div>';
 document.body.appendChild(m);
 document.getElementById('modalCopyBtn').onclick = async () => {
@@ -553,8 +747,6 @@ document.getElementById('copyPromptBtn').onclick = () => copyText('promptOutput'
 document.getElementById('applyArticleBtn').onclick = () => loadArticleFromJson(document.getElementById('jsonInput').value);
 document.getElementById('copyFactCheckBtn').onclick = () => copyText('factCheckPrompt');
 document.getElementById('applyRevisedBtn').onclick = applyRevised;
-document.getElementById('copyComplianceBtn').onclick = () => copyText('compliancePrompt');
-document.getElementById('applyComplianceBtn').onclick = applyCompliance;
 document.getElementById('approveFinalBtn').onclick = approveFinal;
 document.getElementById('copyXBtn').onclick = () => copyText('xOutput');
 document.getElementById('copyNoteBtn').onclick = () => copyText('noteOutput');
