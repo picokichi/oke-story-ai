@@ -539,11 +539,24 @@ document.getElementById('articlePreview').innerHTML =
 
 // ─── JSON正規化 ───────────────────────────────────
 function normalizeJSON(text) {
-return text
-.replace(/[""„‟]/g, '"')
-.replace(/[''‚‛]/g, "'")
-.replace(/ /g, ' ')
+let t = text
+// スマートクォート系（全バリエーション）
+.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036\u00AB\u00BB]/g, '"')
+.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
+// 全角スペース・特殊空白
+.replace(/[\u3000\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ')
+// 全角ダッシュ→ハイフン（JSONキーに混入対策）
+.replace(/[\u2014\u2013\u2015]/g, '-')
 .trim();
+// マークダウンのコードブロック `json ... ` を除去
+const fenced = t.match(/`(?:json)?\s*([\s\S]*?)`/);
+if (fenced) t = fenced[1].trim();
+// 先頭・末尾の余分なテキストを除去（{ または [ から始まる部分を抽出）
+const jsonStart = t.search(/[{[]/);
+if (jsonStart > 0) t = t.slice(jsonStart);
+const jsonEnd = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+if (jsonEnd >= 0 && jsonEnd < t.length - 1) t = t.slice(0, jsonEnd + 1);
+return t;
 }
 
 function loadArticleFromJson(jsonText) {
