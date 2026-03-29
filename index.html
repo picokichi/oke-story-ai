@@ -102,15 +102,15 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
 </div>
 
 <div class="step-nav">
-  <div class="step-dot"><div class="step-circle active" id="sc1">1</div><div class="step-label active" id="sl1">生成</div></div>
+  <div class="step-dot" id="sd1"><div class="step-circle active" id="sc1">1</div><div class="step-label active" id="sl1">生成</div></div>
   <div class="step-connector"></div>
-  <div class="step-dot"><div class="step-circle" id="sc2">2</div><div class="step-label" id="sl2">選択</div></div>
+  <div class="step-dot" id="sd2"><div class="step-circle" id="sc2">2</div><div class="step-label" id="sl2">選択</div></div>
   <div class="step-connector"></div>
-  <div class="step-dot"><div class="step-circle" id="sc3">3</div><div class="step-label" id="sl3">校正</div></div>
+  <div class="step-dot" id="sd3"><div class="step-circle" id="sc3">3</div><div class="step-label" id="sl3">校正</div></div>
   <div class="step-connector"></div>
-  <div class="step-dot"><div class="step-circle" id="sc4">4</div><div class="step-label" id="sl4">公開</div></div>
+  <div class="step-dot" id="sd4"><div class="step-circle" id="sc4">4</div><div class="step-label" id="sl4">公開</div></div>
   <div class="step-connector"></div>
-  <div class="step-dot"><div class="step-circle" id="sc5">5</div><div class="step-label" id="sl5">検証</div></div>
+  <div class="step-dot" id="sd5"><div class="step-circle" id="sc5">5</div><div class="step-label" id="sl5">検証</div></div>
 </div>
 
 <!-- 履歴（折りたたみ） -->
@@ -247,14 +247,65 @@ usedScenarios = JSON.parse(localStorage.getItem('oke_v10_used') || '[]');
 renderTracker(); checkOneWeekAlerts(); renderUsedHistory();
 }
 
+let currentStep = 1;
+
 function setStep(n) {
+if (n > currentStep) currentStep = n;
+_renderStepNav(n);
+}
+
+function _renderStepNav(activeStep) {
 for (let i = 1; i <= 5; i++) {
 const c = document.getElementById('sc' + i);
 const l = document.getElementById('sl' + i);
-if (i < n) { c.className = 'step-circle done'; l.className = 'step-label'; }
-else if (i === n) { c.className = 'step-circle active'; l.className = 'step-label active'; }
+const dot = document.getElementById('sd' + i);
+const reachable = i <= currentStep && i !== 5;
+if (i < activeStep) { c.className = 'step-circle done'; l.className = 'step-label'; }
+else if (i === activeStep) { c.className = 'step-circle active'; l.className = 'step-label active'; }
 else { c.className = 'step-circle'; l.className = 'step-label'; }
+if (dot) {
+dot.style.cursor = reachable ? 'pointer' : 'default';
+dot.title = reachable ? 'STEP' + i + 'へ戻る' : '';
 }
+}
+}
+
+function navigateToStep(n) {
+if (n > currentStep) return;
+if (n === 5) return;
+const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'block'; };
+const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+hide('step1Card'); hide('jsonCard'); hide('scenarioCard');
+hide('previewCard'); hide('finalOutputCard'); hide('selfCheckPanel');
+if (n === 1) {
+show('step1Card'); show('jsonCard');
+} else if (n === 2) {
+if (multipleScenarios.length > 0) {
+document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
+show('scenarioCard');
+} else {
+show('step1Card'); show('jsonCard'); _renderStepNav(1); return;
+}
+} else if (n === 3) {
+if (currentArticleData) {
+show('previewCard');
+} else if (multipleScenarios.length > 0) {
+show('scenarioCard'); _renderStepNav(2); return;
+} else {
+show('step1Card'); show('jsonCard'); _renderStepNav(1); return;
+}
+} else if (n === 4) {
+const fc = document.getElementById('finalOutputCard');
+if (fc && fc.innerHTML.trim() !== '') {
+show('finalOutputCard');
+const sp = document.getElementById('selfCheckPanel');
+if (sp && sp.innerHTML.trim() !== '') show('selfCheckPanel');
+} else {
+navigateToStep(3); return;
+}
+}
+_renderStepNav(n);
+window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function isScenarioUsed(title, chain) {
@@ -783,6 +834,12 @@ const isOpen = body.style.display !== 'none';
 body.style.display = isOpen ? 'none' : 'block';
 this.classList.toggle('open', !isOpen);
 };
+
+// ─── ステップナビ クリックで戻る ────────────────────
+[1,2,3,4].forEach(n => {
+const dot = document.getElementById('sd' + n);
+if (dot) dot.addEventListener('click', () => navigateToStep(n));
+});
 
 loadAllData();
 </script>
