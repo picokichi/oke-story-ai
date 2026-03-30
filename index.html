@@ -652,7 +652,6 @@ if (!txt) return alert('AIの出力を貼り付けてください');
 try {
 const obj = JSON.parse(txt);
 
-```
 // revisedFields方式（新）: 変更箇所だけ上書き
 if (obj.revisedFields !== undefined) {
   const f = obj.revisedFields;
@@ -687,7 +686,6 @@ if (compResult) {
     compDisplay.innerHTML = '<div class="compliance-ng">⚠️ コンプライアンス: ' + compResult.replace(/\n/g, '<br>') + '</div>';
   }
 }
-```
 
 } catch(e) { alert('JSONの読み込み失敗:\n' + e.message); }
 }
@@ -949,7 +947,6 @@ const obj = JSON.parse(txt);
 const stocks = obj.stocks || (Array.isArray(obj) ? obj : null);
 if (!stocks || stocks.length === 0) throw new Error('"stocks" 配列が見つかりません');
 
-```
 // シナリオ全件にマージ
 multipleScenarios = multipleScenarios.map(s => ({ ...s, stocks: stocks }));
 // 現在選択中のシナリオにもマージ
@@ -964,7 +961,6 @@ document.getElementById('jsonCard').style.display = 'none';
 displayScenarios({ scenarios: multipleScenarios });
 setStep(2);
 window.scrollTo({ top: document.getElementById('scenarioCard').offsetTop - 20, behavior: 'smooth' });
-```
 
 } catch(e) { alert('銘柄JSONの読み込み失敗:\n' + e.message); }
 }
