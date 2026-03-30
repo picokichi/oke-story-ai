@@ -499,39 +499,40 @@ probability: s.probability, probabilityReason: s.probabilityReason || ''
 
 displayPreview(currentArticleData);
 
-// ③ ファクト＋コンプライアンス統合プロンプト
+// ③ ファクト＋コンプライアンス統合プロンプト（元記事データの埋め込みなし）
+const _stocks = (currentArticleData.stocks || []).map(s =>
+s.name + '(' + s.code + ') 現在株価:' + s.currentPrice + '円 / 予想:' + s.prediction
+).join(', ');
+const _news = (currentArticleData.newsChain || []).map((n, i) =>
+(i+1) + '. [' + (n.freshness === 'fresh' ? '24h以内' : '3-7日前') + '] ' + n.headline + '（' + (n.source || '') + '）'
+).join('\n');
+const _storyHead = (currentArticleData.causalStory || '').replace(/\n/g, '\n');
+
 document.getElementById('factCheckPrompt').value =
-`【ファクト＆コンプライアンス統合チェック依頼】
-以下の記事データについて、①ファクトチェックと②コンプライアンス確認を同時に行ってください。
-
-═══ ① ファクトチェック ═══
-【最重要】各銘柄の株価をYahooファイナンス（finance.yahoo.co.jp）でウェブ検索し確認：
-・currentPriceが実際の株価と一致しているか
-・株価が1000円未満であること（超えていたら別銘柄に変更）
-・証券コードが正しいか
-
-その他チェック項目：
-・ニュースの因果関係に論理的矛盾がないか
-・newsChainの各ニュースがfreshness（24h以内/3〜7日以内）の分類通りか
-・比喩・擬人化が読者に伝わるか
-・1200字以上の文章量があるか
-
-═══ ② コンプライアンスチェック（SNS個人発信・緩め基準） ═══
-以下の2点のみ確認：
-
-1. 「必ず上がる」「確実に儲かる」など断定的な投資推奨表現がないか
-1. 根拠のない噂・虚偽情報を流す風説の流布に該当する表現がないか
-   ※免責事項の有無は不問。個人SNS発信として許容範囲で判断。
-
-═══ 出力形式 ═══
-修正がある場合：
-{"revisedArticle": {修正後の記事データ}, "changes": "変更点の要約", "complianceResult": "OK または NG: 問題箇所と修正案"}
-
-修正がない場合：
-{"revisedArticle": ${JSON.stringify(currentArticleData)}, "changes": "修正なし", "complianceResult": "OK: 問題は見つかりませんでした"}
-
-元記事データ:
-${JSON.stringify(currentArticleData, null, 2)}`;
+'【ファクト＆コンプライアンス統合チェック依頼】\n' +
+'以下の記事情報について、①ファクトチェックと②コンプライアンス確認を同時に行ってください。\n\n' +
+'【記事タイトル】' + currentArticleData.title + '\n\n' +
+'【注目銘柄】\n' + _stocks + '\n\n' +
+'【ニュース連鎖】\n' + _news + '\n\n' +
+'【ストーリー全文】\n' + _storyHead + '\n\n' +
+'═══ ① ファクトチェック ═══\n' +
+'【最重要】各銘柄の株価をYahooファイナンス（finance.yahoo.co.jp）でウェブ検索し確認：\n' +
+'・currentPriceが実際の株価と一致しているか\n' +
+'・株価が1000円未満であること（超えていたら別銘柄に変更）\n' +
+'・証券コードが正しいか\n\n' +
+'その他チェック項目：\n' +
+'・ニュースの因果関係に論理的矛盾がないか\n' +
+'・比喩・擬人化が読者に伝わるか\n\n' +
+'═══ ② コンプライアンスチェック（SNS個人発信・緩め基準） ═══\n' +
+'以下の2点のみ確認：\n' +
+'1. 「必ず上がる」「確実に儲かる」など断定的な投資推奨表現がないか\n' +
+'2. 根拠のない噂・虚偽情報を流す風説の流布に該当する表現がないか\n' +
+'※免責事項の有無は不問。個人SNS発信として許容範囲で判断。\n\n' +
+'═══ 出力形式（JSONのみ・余分なテキスト不要） ═══\n' +
+'修正がある場合：\n' +
+'{"revisedFields": {"stocks": [修正後の銘柄配列], "causalStory": "修正後ストーリー（修正した場合のみ）"}, "changes": "変更点の要約", "complianceResult": "OK または NG: 問題箇所"}\n\n' +
+'修正がない場合：\n' +
+'{"revisedFields": {}, "changes": "修正なし", "complianceResult": "OK: 問題は見つかりませんでした"}';
 
 document.getElementById('previewCard').style.display = 'block';
 document.getElementById('scenarioCard').style.display = 'none';
@@ -626,17 +627,32 @@ const txt = normalizeJSON(document.getElementById('revisedJsonInput').value);
 if (!txt) return alert('AIの出力を貼り付けてください');
 try {
 const obj = JSON.parse(txt);
-const revised = obj.revisedArticle || (obj.stocks ? obj : null);
-if (!revised) throw new Error('JSONの形式が正しくありません。\n\nAIへの指示：\n{"revisedArticle": {記事データ}, "changes": "変更点", "complianceResult": "OK または NG: ..."} の形式で出力してください');
-currentArticleData = revised;
-displayPreview(currentArticleData);
 
 ```
-// 変更点表示
+// revisedFields方式（新）: 変更箇所だけ上書き
+if (obj.revisedFields !== undefined) {
+  const f = obj.revisedFields;
+  if (f.stocks && f.stocks.length > 0) currentArticleData.stocks = f.stocks;
+  if (f.causalStory) currentArticleData.causalStory = f.causalStory;
+  if (f.title) currentArticleData.title = f.title;
+  if (f.newsChain) currentArticleData.newsChain = f.newsChain;
+}
+// revisedArticle方式（旧・後方互換）
+else if (obj.revisedArticle) {
+  currentArticleData = obj.revisedArticle;
+}
+// stocks直接方式（後方互換）
+else if (obj.stocks) {
+  currentArticleData = obj;
+} else {
+  throw new Error('JSONの形式が正しくありません。\n\nAIへの指示：\n{"revisedFields": {}, "changes": "修正なし", "complianceResult": "OK: ..."} の形式で出力してください');
+}
+
+displayPreview(currentArticleData);
+
 document.getElementById('diffDisplay').style.display = 'block';
 document.getElementById('diffDisplay').innerHTML = '✍️ ' + (obj.changes || '修正が反映されました');
 
-// コンプライアンス結果表示（統合）
 const compResult = obj.complianceResult || '';
 const compDisplay = document.getElementById('complianceDisplay');
 if (compResult) {
