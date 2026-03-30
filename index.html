@@ -479,7 +479,7 @@ return '<div class="scenario-card ' + (s.isUsed ? 'used' : '') + '" data-idx="' 
 '<div class="probability ' + (s.probability < 50 ? 'probability-low' : '') + '">実現確率 ' + s.probability + '%</div>' +
 '<div class="scenario-chain">🔗 ' + chainHtml + '</div>' +
 '<div class="scenario-metaphor">💡 ' + ((s.metaphors && s.metaphors.opening) || s.metaphor || '') + '</div>' +
-'<div class="scenario-stocks">🎯 注目銘柄: ' + s.stocks.map(st => st.name + '(' + st.code + ')').join(', ') + '</div>' +
+'<div class="scenario-stocks">🎯 注目銘柄: ' + ((s.stocks && s.stocks.length) ? s.stocks.map(st => st.name + '(' + st.code + ')').join(', ') : '株探し未実施') + '</div>' +
 '</div>';
 }).join('');
 document.querySelectorAll('.scenario-card:not(.used)').forEach(card => {
@@ -502,14 +502,25 @@ const closingMeta = (s.metaphors && s.metaphors.closing) || '';
 currentArticleData = {
 title: s.title, newsChain: s.newsChain,
 causalStory: s.causalStory + '\n\n' + (closingMeta ? closingMeta + '\n\n' : '') + '📌 あなたはこのシナリオ、何点だと思う？コメントで教えてください！',
-stocks: s.stocks, metaphor: openingMeta, metaphors: s.metaphors,
+stocks: s.stocks || [], metaphor: openingMeta, metaphors: s.metaphors,
 probability: s.probability, probabilityReason: s.probabilityReason || ''
 };
 
+// 株がまだなければ STEP1-B（株探し）へ
+if (!currentArticleData.stocks || currentArticleData.stocks.length === 0) {
+document.getElementById('scenarioCard').style.display = 'none';
+document.getElementById('stockSearchCard').style.display = 'block';
+setStep(2);
+window.scrollTo({ top: document.getElementById('stockSearchCard').offsetTop - 20, behavior: 'smooth' });
+return;
+}
+
 displayPreview(currentArticleData);
 
-// ③ ファクト＋コンプライアンス統合プロンプト（元記事データの埋め込みなし）
-const _stocks = (currentArticleData.stocks || []).map(s =>
+// ③ ファクト＋コンプライアンス統合プロンプト
+_buildFactCheckPrompt();
+
+const _dummy_stocks = (currentArticleData.stocks || []).map(s =>
 s.name + '(' + s.code + ') 現在株価:' + s.currentPrice + '円 / 予想:' + s.prediction
 ).join(', ');
 const _news = (currentArticleData.newsChain || []).map((n, i) =>
@@ -619,7 +630,7 @@ const jsonEnd = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
 if (jsonEnd >= 0 && jsonEnd < t.length - 1) t = t.slice(0, jsonEnd + 1);
 // JSON文字列値の中のバッククォートを除去（テンプレートリテラル混入対策）
 // 文字列値 "..." の中身だけを対象に処理
-t = t.replace(/"((?:[^"\\]|\\.)*)"/g, (match, inner) => {
+t = t.replace(/"((?:[^"\]|\.)*)"/g, (match, inner) => {
 return '"' + inner.replace(/`/g, "'") + '"';
 });
 return t;
@@ -629,19 +640,10 @@ function loadArticleFromJson(jsonText) {
 let data;
 try { data = JSON.parse(normalizeJSON(jsonText)); } catch(e) { alert('JSON解析エラー: ' + e.message); return; }
 if (data.scenarios && data.scenarios.length >= 2) {
-// stocksが空の場合はSTEP1-Bへ、すでにstocksがあればSTEP2へ
-const hasStocks = data.scenarios.every(s => s.stocks && s.stocks.length > 0);
 multipleScenarios = data.scenarios.map(s => ({ ...s, isUsed: isScenarioUsed(s.title, (s.newsChain||[]).map(n => n.headline).join(' → ')) }));
 document.getElementById('jsonCard').style.display = 'none';
 document.getElementById('step1Card').style.display = 'none';
-if (!hasStocks) {
-// STEP1-B: 株探しフェーズへ
-document.getElementById('stockSearchCard').style.display = 'block';
-setStep(2);
-window.scrollTo({ top: document.getElementById('stockSearchCard').offsetTop - 20, behavior: 'smooth' });
-} else {
-displayScenarios(data);
-}
+displayScenarios({ scenarios: multipleScenarios });
 } else { alert('JSONに scenarios フィールド（2件以上）が必要です。'); }
 }
 
@@ -952,15 +954,17 @@ multipleScenarios = multipleScenarios.map(s => ({ ...s, stocks: stocks }));
 // 現在選択中のシナリオにもマージ
 if (currentArticleData) currentArticleData.stocks = stocks;
 
-// stockSearchCardを隠してSTEP2表示
+// 現在選択中の記事にもマージして即STEP3プレビューへ
 document.getElementById('stockSearchCard').style.display = 'none';
-document.getElementById('step1Card').style.display = 'none';
-document.getElementById('jsonCard').style.display = 'none';
-
-// シナリオカードを再描画して表示
-displayScenarios({ scenarios: multipleScenarios });
-setStep(2);
-window.scrollTo({ top: document.getElementById('scenarioCard').offsetTop - 20, behavior: 'smooth' });
+if (currentArticleData) {
+  currentArticleData.stocks = stocks;
+  displayPreview(currentArticleData);
+  // ファクト・コンプラプロンプト生成
+  _buildFactCheckPrompt();
+  document.getElementById('previewCard').style.display = 'block';
+  setStep(3);
+  window.scrollTo({ top: document.getElementById('previewCard').offsetTop - 20, behavior: 'smooth' });
+}
 
 } catch(e) { alert('銘柄JSONの読み込み失敗:\n' + e.message); }
 }
