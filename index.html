@@ -91,6 +91,11 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
 .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #eef2ff; color: var(--navy); margin-right: 4px; margin-top: 4px; }
 .compliance-ok { background: #dcfce7; color: #166534; padding: 8px 12px; border-radius: 10px; font-size: 13px; margin-top: 8px; }
 .compliance-ng { background: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 10px; font-size: 13px; margin-top: 8px; }
+.ai-selector { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.ai-btn { flex: 1; min-width: 80px; padding: 8px 6px; border-radius: 12px; border: 2px solid #e2e8f0; background: white; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; text-align: center; }
+.ai-btn.selected { border-color: var(--navy); background: var(--navy-light); color: var(--navy); }
+.step-sub { font-size: 11px; color: #94a3b8; font-weight: 500; margin-bottom: 6px; }
+.merge-preview { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -126,27 +131,58 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   </div>
 </div>
 
-<!-- STEP1 -->
+<!-- STEP1-A 記事生成 -->
 
 <div class="card" id="step1Card">
-  <div class="label">✨ STEP 1 — 記事生成プロンプト</div>
-  <button id="generateArticleBtn" class="btn-primary">プロンプトを生成する</button>
+  <div class="label">✨ STEP 1-A — 記事生成プロンプト</div>
+  <div class="step-sub">使用するAIを選んでください</div>
+  <div class="ai-selector" id="aiSelectorA">
+    <button class="ai-btn selected" data-ai="Gemini">Gemini</button>
+    <button class="ai-btn" data-ai="ChatGPT">ChatGPT</button>
+    <button class="ai-btn" data-ai="Claude">Claude</button>
+  </div>
+  <button id="generateArticleBtn" class="btn-primary">① 記事生成プロンプトを作る</button>
   <div id="promptArea" style="display:none;margin-top:14px;">
-    <div class="label" style="margin-top:0;">📋 AIにコピペするプロンプト</div>
+    <div class="label" style="margin-top:0;">📋 AIにコピペするプロンプト（株指定なし・記事のみ）</div>
     <textarea id="promptOutput" rows="8" readonly></textarea>
     <div class="flex-btns">
-      <button id="copyPromptBtn" class="btn-secondary">📋 プロンプトをコピー</button>
+      <button id="copyPromptBtn" class="btn-secondary">📋 コピー</button>
     </div>
-    <div class="footer-note">※ AIはウェブ検索で最新ニュース・株価を取得してください</div>
+    <div class="footer-note">※ このプロンプトはストーリー生成専用です。株は次のSTEP 1-Bで探します</div>
   </div>
 </div>
 
-<!-- STEP2 JSON -->
+<!-- STEP1-A JSON入力 -->
 
 <div class="card" id="jsonCard">
-  <div class="label">📥 STEP 2 — AIが生成したJSONを貼り付け</div>
+  <div class="label">📥 STEP 1-A — AIが生成したJSONを貼り付け</div>
   <textarea id="jsonInput" rows="6" placeholder="AIが出力したJSONをここに貼り付け..."></textarea>
-  <button id="applyArticleBtn" class="btn-primary" style="margin-top:12px;">シナリオを表示する →</button>
+  <button id="applyArticleBtn" class="btn-primary" style="margin-top:12px;">シナリオを読み込む →</button>
+</div>
+
+<!-- STEP1-B 株探し -->
+
+<div class="card" id="stockSearchCard" style="display:none;">
+  <div class="label">🔍 STEP 1-B — 注目低位株を探す</div>
+  <div class="step-sub">使用するAIを選んでください</div>
+  <div class="ai-selector" id="aiSelectorB">
+    <button class="ai-btn selected" data-ai="Gemini">Gemini</button>
+    <button class="ai-btn" data-ai="ChatGPT">ChatGPT</button>
+    <button class="ai-btn" data-ai="Claude">Claude</button>
+  </div>
+  <div style="font-size:13px;color:#64748b;margin-bottom:10px;">選んだシナリオのストーリー全文を渡して、テーマに合う低位株を探させます</div>
+  <button id="generateStockPromptBtn" class="btn-primary">② 株探しプロンプトを作る</button>
+  <div id="stockPromptArea" style="display:none;margin-top:14px;">
+    <div class="label" style="margin-top:0;">📋 AIにコピペするプロンプト（株探し専用）</div>
+    <textarea id="stockPromptOutput" rows="6" readonly></textarea>
+    <div class="flex-btns">
+      <button id="copyStockPromptBtn" class="btn-secondary">📋 コピー</button>
+    </div>
+    <div class="footer-note">※ AIはYahooファイナンスで株価を確認してください。株価1000円未満の低位株のみ</div>
+    <div class="label" style="margin-top:14px;">✍️ AIが出力した銘柄JSONを貼り付け</div>
+    <textarea id="stockJsonInput" rows="4" placeholder='{"stocks": [{"name": "企業名", "code": "1234", "currentPrice": 500, "prediction": "up", "reasoning": "選出理由と織り込み判定"}]}'></textarea>
+    <button id="applyStockBtn" class="btn-primary" style="margin-top:10px;">③ 記事にマージしてSTEP 2へ →</button>
+  </div>
 </div>
 
 <!-- STEP2b シナリオ選択 -->
@@ -275,7 +311,7 @@ if (n > currentStep) return;
 if (n === 5) return;
 const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'block'; };
 const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-hide('step1Card'); hide('jsonCard'); hide('scenarioCard');
+hide('step1Card'); hide('jsonCard'); hide('stockSearchCard'); hide('scenarioCard');
 hide('previewCard'); hide('finalOutputCard'); hide('selfCheckPanel');
 if (n === 1) {
 show('step1Card'); show('jsonCard');
@@ -374,7 +410,7 @@ const prompt =
 1. 冒頭フック（2〜3文）
 1. ニュースの説明（各ニュースを2〜3文で丁寧に）
 1. 因果関係の展開：なぜAがBを引き起こし、BがCになるのかをステップごとに説明
-1. クライマックス：なぜこの銘柄に注目するのか、感情を動かす言葉で
+1. クライマックス：因果関係の帰結と読者の感情を動かす言葉で
 1. 締め：読者への問いかけで終わる
 
 ■ 文体ルール
@@ -383,24 +419,6 @@ const prompt =
 ・専門用語を使う場合は必ず一言で説明する
 
 ■ シナリオ実現確率（%）と根拠を1文で
-
-■ 注目低位株（株価1000円未満）1〜2社
-・必ずYahooファイナンス（finance.yahoo.co.jp）をウェブ検索して最新株価を確認
-・記憶や学習データの株価は使用禁止
-・株価が1000円以上の場合はその銘柄を除外して別の銘柄を選ぶ
-・証券コードも必ずウェブ検索で確認する
-
-■ 株価の数値は記事本文に記載しない（トラッカー用として内部保持のみ）
-
-【★② 織り込み判定（必須）★】
-各銘柄の選出理由（reasoning）の中に、以下4点を自然な文章として組み込むこと：
-
-1. 価格反応：関連セクター・銘柄がすでに動いているかを確認し、「織り込み済み or 未織り込み」を判断する
-1. 時間軸：ニュースの初出タイミングを確認し、鮮度を評価する
-1. 市場の広がり：テーマが市場全体に広がっているか、一部に留まっているかを分析する
-1. 結論：「今は初動・中盤・終盤のどこか」を明示する
-
-例）「○○セクターはまだ株価に反応が薄く未織り込みと判断。ニュースの初出は昨日で鮮度は高い。テーマはまだ一部の専門家の間に留まっており、市場全体への広がりはこれからとみられる。現時点では初動フェーズと読む。」
 
 【出力形式】JSON形式のみで出力。説明文不要。
 {
@@ -430,16 +448,7 @@ const prompt =
 "freshness": "background"
 }
 ],
-"causalStory": "因果関係のストーリー本文（1200〜1500字、上記の構成ルールに従う）",
-"stocks": [
-{
-"name": "企業名",
-"code": "証券コード（ウェブ検索で確認済み）",
-"currentPrice": 株価（数値のみ、ウェブ検索で確認済み）,
-"prediction": "up",
-"reasoning": "選出理由。織り込み判定（価格反応・時間軸・市場の広がり・初動/中盤/終盤の結論）を自然な文章で含める"
-}
-]
+"causalStory": "因果関係のストーリー本文（1200〜1500字、上記の構成ルールに従う）"
 }
 ]
 }
@@ -608,6 +617,11 @@ const jsonStart = t.search(/[{[]/);
 if (jsonStart > 0) t = t.slice(jsonStart);
 const jsonEnd = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
 if (jsonEnd >= 0 && jsonEnd < t.length - 1) t = t.slice(0, jsonEnd + 1);
+// JSON文字列値の中のバッククォートを除去（テンプレートリテラル混入対策）
+// 文字列値 "..." の中身だけを対象に処理
+t = t.replace(/"((?:[^"\]|\.)*)"/g, (match, inner) => {
+return '"' + inner.replace(/`/g, "'") + '"';
+});
 return t;
 }
 
@@ -615,9 +629,19 @@ function loadArticleFromJson(jsonText) {
 let data;
 try { data = JSON.parse(normalizeJSON(jsonText)); } catch(e) { alert('JSON解析エラー: ' + e.message); return; }
 if (data.scenarios && data.scenarios.length >= 2) {
-displayScenarios(data);
+// stocksが空の場合はSTEP1-Bへ、すでにstocksがあればSTEP2へ
+const hasStocks = data.scenarios.every(s => s.stocks && s.stocks.length > 0);
+multipleScenarios = data.scenarios.map(s => ({ ...s, isUsed: isScenarioUsed(s.title, (s.newsChain||[]).map(n => n.headline).join(' → ')) }));
 document.getElementById('jsonCard').style.display = 'none';
 document.getElementById('step1Card').style.display = 'none';
+if (!hasStocks) {
+// STEP1-B: 株探しフェーズへ
+document.getElementById('stockSearchCard').style.display = 'block';
+setStep(2);
+window.scrollTo({ top: document.getElementById('stockSearchCard').offsetTop - 20, behavior: 'smooth' });
+} else {
+displayScenarios(data);
+}
 } else { alert('JSONに scenarios フィールド（2件以上）が必要です。'); }
 }
 
@@ -851,12 +875,110 @@ body.style.display = isOpen ? 'none' : 'block';
 this.classList.toggle('open', !isOpen);
 };
 
+// ─── AIセレクター ────────────────────────────────────
+let selectedAI_A = 'Gemini';
+let selectedAI_B = 'Gemini';
+
+function initAiSelectors() {
+document.querySelectorAll('#aiSelectorA .ai-btn').forEach(btn => {
+btn.onclick = () => {
+document.querySelectorAll('#aiSelectorA .ai-btn').forEach(b => b.classList.remove('selected'));
+btn.classList.add('selected');
+selectedAI_A = btn.dataset.ai;
+};
+});
+document.querySelectorAll('#aiSelectorB .ai-btn').forEach(btn => {
+btn.onclick = () => {
+document.querySelectorAll('#aiSelectorB .ai-btn').forEach(b => b.classList.remove('selected'));
+btn.classList.add('selected');
+selectedAI_B = btn.dataset.ai;
+};
+});
+}
+
+// ─── STEP1-B 株探しプロンプト生成 ────────────────────
+function generateStockPrompt() {
+if (!currentArticleData) { alert('先にシナリオを選択してください'); return; }
+const story = (currentArticleData.causalStory || '').replace(/`/g, "'");
+const lines = [
+'【株探し専用プロンプト】',
+'以下の記事ストーリーのテーマに合う注目銘柄を1〜2社探してください。',
+'',
+'【記事タイトル】',
+currentArticleData.title,
+'',
+'【ストーリー全文】',
+story,
+'',
+'【銘柄選定ルール】',
+'・株価条件: 1000円未満（低位株）',
+'・株価確認: Yahooファイナンス（finance.yahoo.co.jp）でウェブ検索して最新株価を確認。1000円以上なら除外。',
+'・上場条件: 東証上場銘柄のみ。証券コードをウェブ検索で確認。',
+'・記憶や学習データの株価は使用禁止',
+'',
+'【織り込み判定（必須・reasoningに含める）】',
+'1. 価格反応: 関連セクター・銘柄がすでに動いているか → 「織り込み済み or 未織り込み」を判断',
+'2. 時間軸: ニュースの初出タイミングと鮮度を評価',
+'3. 市場の広がり: テーマが市場全体に広がっているか分析',
+'4. 結論: 「初動・中盤・終盤のどこか」を明示',
+'',
+'【出力形式】JSONのみ。説明文・マークダウン不要。',
+'{',
+'  "stocks": [',
+'    {',
+'      "name": "企業名",',
+'      "code": "証券コード（例: 1234）",',
+'      "currentPrice": 株価（円、数値のみ）,',
+'      "prediction": "up",',
+'      "reasoning": "選出理由と織り込み判定4項目を自然な文章で"',
+'    }',
+'  ]',
+'}'
+];
+const prompt = lines.join('\n');
+document.getElementById('stockPromptOutput').value = prompt;
+document.getElementById('stockPromptArea').style.display = 'block';
+}
+
+// ─── STEP1-B 銘柄マージ → STEP2へ ───────────────────
+function applyStockAndMerge() {
+const txt = normalizeJSON(document.getElementById('stockJsonInput').value);
+if (!txt) return alert('銘柄JSONを貼り付けてください');
+try {
+const obj = JSON.parse(txt);
+const stocks = obj.stocks || (Array.isArray(obj) ? obj : null);
+if (!stocks || stocks.length === 0) throw new Error('"stocks" 配列が見つかりません');
+
+```
+// シナリオ全件にマージ
+multipleScenarios = multipleScenarios.map(s => ({ ...s, stocks: stocks }));
+// 現在選択中のシナリオにもマージ
+if (currentArticleData) currentArticleData.stocks = stocks;
+
+// stockSearchCardを隠してSTEP2表示
+document.getElementById('stockSearchCard').style.display = 'none';
+document.getElementById('step1Card').style.display = 'none';
+document.getElementById('jsonCard').style.display = 'none';
+
+// シナリオカードを再描画して表示
+displayScenarios({ scenarios: multipleScenarios });
+setStep(2);
+window.scrollTo({ top: document.getElementById('scenarioCard').offsetTop - 20, behavior: 'smooth' });
+```
+
+} catch(e) { alert('銘柄JSONの読み込み失敗:\n' + e.message); }
+}
+
 // ─── ステップナビ クリックで戻る ────────────────────
 [1,2,3,4].forEach(n => {
 const dot = document.getElementById('sd' + n);
 if (dot) dot.addEventListener('click', () => navigateToStep(n));
 });
 
+document.getElementById('generateStockPromptBtn').onclick = generateStockPrompt;
+document.getElementById('copyStockPromptBtn').onclick = () => copyText('stockPromptOutput');
+document.getElementById('applyStockBtn').onclick = applyStockAndMerge;
+initAiSelectors();
 loadAllData();
 </script>
 
