@@ -630,7 +630,7 @@ const jsonEnd = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
 if (jsonEnd >= 0 && jsonEnd < t.length - 1) t = t.slice(0, jsonEnd + 1);
 // JSON文字列値の中のバッククォートを除去（テンプレートリテラル混入対策）
 // 文字列値 "..." の中身だけを対象に処理
-t = t.replace(/"((?:[^"\]|\.)*)"/g, (match, inner) => {
+t = t.replace(/"((?:[^"\\]|\\.)*)"/g, (match, inner) => {
 return '"' + inner.replace(/`/g, "'") + '"';
 });
 return t;
