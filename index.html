@@ -499,61 +499,22 @@ const s = multipleScenarios[idx];
 if (s.isUsed) { alert('このシナリオは使用済みです。'); return; }
 const openingMeta = (s.metaphors && s.metaphors.opening) || s.metaphor || '';
 const closingMeta = (s.metaphors && s.metaphors.closing) || '';
+const NL = String.fromCharCode(10);
 currentArticleData = {
 title: s.title, newsChain: s.newsChain,
-causalStory: s.causalStory + '\n\n' + (closingMeta ? closingMeta + '\n\n' : '') + '📌 あなたはこのシナリオ、何点だと思う？コメントで教えてください！',
+causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ、何点だと思う？コメントで教えてください！',
 stocks: s.stocks || [], metaphor: openingMeta, metaphors: s.metaphors,
 probability: s.probability, probabilityReason: s.probabilityReason || ''
 };
-
-// 株がまだなければ STEP1-B（株探し）へ
-if (!currentArticleData.stocks || currentArticleData.stocks.length === 0) {
+if (currentArticleData.stocks.length === 0) {
 document.getElementById('scenarioCard').style.display = 'none';
 document.getElementById('stockSearchCard').style.display = 'block';
 setStep(2);
 window.scrollTo({ top: document.getElementById('stockSearchCard').offsetTop - 20, behavior: 'smooth' });
 return;
 }
-
 displayPreview(currentArticleData);
-
-// ③ ファクト＋コンプライアンス統合プロンプト
 _buildFactCheckPrompt();
-
-const _dummy_stocks = (currentArticleData.stocks || []).map(s =>
-s.name + '(' + s.code + ') 現在株価:' + s.currentPrice + '円 / 予想:' + s.prediction
-).join(', ');
-const _news = (currentArticleData.newsChain || []).map((n, i) =>
-(i+1) + '. [' + (n.freshness === 'fresh' ? '24h以内' : '3-7日前') + '] ' + n.headline + '（' + (n.source || '') + '）'
-).join('\n');
-const _storyHead = (currentArticleData.causalStory || '').replace(/\n/g, '\n');
-
-document.getElementById('factCheckPrompt').value =
-'【ファクト＆コンプライアンス統合チェック依頼】\n' +
-'以下の記事情報について、①ファクトチェックと②コンプライアンス確認を同時に行ってください。\n\n' +
-'【記事タイトル】' + currentArticleData.title + '\n\n' +
-'【注目銘柄】\n' + _stocks + '\n\n' +
-'【ニュース連鎖】\n' + _news + '\n\n' +
-'【ストーリー全文】\n' + _storyHead + '\n\n' +
-'═══ ① ファクトチェック ═══\n' +
-'【最重要】各銘柄の株価をYahooファイナンス（finance.yahoo.co.jp）でウェブ検索し確認：\n' +
-'・currentPriceが実際の株価と一致しているか\n' +
-'・株価が1000円未満であること（超えていたら別銘柄に変更）\n' +
-'・証券コードが正しいか\n\n' +
-'その他チェック項目：\n' +
-'・ニュースの因果関係に論理的矛盾がないか\n' +
-'・比喩・擬人化が読者に伝わるか\n\n' +
-'═══ ② コンプライアンスチェック（SNS個人発信・緩め基準） ═══\n' +
-'以下の2点のみ確認：\n' +
-'1. 「必ず上がる」「確実に儲かる」など断定的な投資推奨表現がないか\n' +
-'2. 根拠のない噂・虚偽情報を流す風説の流布に該当する表現がないか\n' +
-'※免責事項の有無は不問。個人SNS発信として許容範囲で判断。\n\n' +
-'═══ 出力形式（JSONのみ・余分なテキスト不要） ═══\n' +
-'修正がある場合：\n' +
-'{"revisedFields": {"stocks": [修正後の銘柄配列], "causalStory": "修正後ストーリー（修正した場合のみ）"}, "changes": "変更点の要約", "complianceResult": "OK または NG: 問題箇所"}\n\n' +
-'修正がない場合：\n' +
-'{"revisedFields": {}, "changes": "修正なし", "complianceResult": "OK: 問題は見つかりませんでした"}';
-
 document.getElementById('previewCard').style.display = 'block';
 document.getElementById('scenarioCard').style.display = 'none';
 setStep(3);
@@ -630,7 +591,7 @@ const jsonEnd = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
 if (jsonEnd >= 0 && jsonEnd < t.length - 1) t = t.slice(0, jsonEnd + 1);
 // JSON文字列値の中のバッククォートを除去（テンプレートリテラル混入対策）
 // 文字列値 "..." の中身だけを対象に処理
-t = t.replace(/"((?:[^"\\]|\\.)*)"/g, (match, inner) => {
+t = t.replace(/"((?:[^"\]|\.)*)"/g, (match, inner) => {
 return '"' + inner.replace(/`/g, "'") + '"';
 });
 return t;
