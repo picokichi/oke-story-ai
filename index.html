@@ -520,7 +520,7 @@ const closingMeta = (s.metaphors && s.metaphors.closing) || '';
 const NL = String.fromCharCode(10);
 currentArticleData = {
 title: s.title, newsChain: s.newsChain,
-causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ、何点だと思う？コメントで教えてください！',
+causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ、実現確率何%だと思う？コメントで教えてください！',
 stocks: s.stocks || [], metaphor: openingMeta, metaphors: s.metaphors,
 probability: s.probability, probabilityReason: s.probabilityReason || ''
 };
@@ -729,7 +729,7 @@ note += '### ' + s.name + '（' + s.code + '）\n' +
 '- **選出理由＆織り込み判定**: ' + s.reasoning + '\n\n';
 });
 note += '—\n\n';
-note += '💬 **あなたはこのシナリオ、何点だと思いますか？** コメントで教えてください！\n\n';
+note += '💬 **あなたはこのシナリオ、実現確率何%だと思いますか？** コメントで教えてください！\n\n';
 note += '⚠️ *この記事はAIが生成した情報です。投資判断はご自身の責任でお願いします。株式投資にはリスクが伴います。過去の実績は将来の成果を保証するものではありません。*';
 
 document.getElementById('xOutput').value = xContent;
@@ -812,17 +812,17 @@ showModal(txt, '全銘柄チェック用プロンプト');
 
 function parseAndApplyBatch(text) {
 const lines = text.split('\n'); let count = 0;
-const cp = /(?:銘柄|企業名)[:：]\s*([^（\n]+)/;
+const cp = /(?:銘柄|企業名)[:：]\s*([^\n（(]+)/;
 const rp = /判定[:：]\s*[【〔]?(的中|はずれ|当たり|外れ)[】〕]?/;
 let block = '';
 for (let i = 0; i <= lines.length; i++) {
 const l = lines[i] || ''; block += l + '\n';
-if ((l.includes('銘柄') || l.includes('企業名') || i === lines.length) && block.trim()) {
+if ((l.match(/^(銘柄|企業名)/) || i === lines.length) && block.trim()) {
 const cm = block.match(cp); const rm = block.match(rp);
 if (cm && rm) {
 const name = cm[1].trim();
 const status = (rm[1] === '的中' || rm[1] === '当たり') ? 'hit' : 'miss';
-const t = predictions.find(p => p.company.includes(name) && p.status === 'pending');
+const t = predictions.find(p => p.company === name && p.status === 'pending');
 if (t) { t.status = status; t.lastCheckDate = new Date().toISOString(); count++; }
 }
 block = '';
