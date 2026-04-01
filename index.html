@@ -268,18 +268,36 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
 
 </div>
 <script>
+// ─── localStorage 安全ラッパー（使えない環境でもクラッシュしない）────
+const _store = (function() {
+  const mem = {};
+  try {
+    localStorage.setItem('__test__', '1');
+    localStorage.removeItem('__test__');
+    return {
+      get: function(k) { return localStorage.getItem(k); },
+      set: function(k, v) { localStorage.setItem(k, v); },
+    };
+  } catch(e) {
+    return {
+      get: function(k) { return mem[k] !== undefined ? mem[k] : null; },
+      set: function(k, v) { mem[k] = v; },
+    };
+  }
+})();
+
 let predictions = [];
 let currentArticleData = null;
 let multipleScenarios = [];
 let usedScenarios = [];
 
 function saveAllData() {
-localStorage.setItem('oke_v10_tracker', JSON.stringify(predictions));
-localStorage.setItem('oke_v10_used', JSON.stringify(usedScenarios));
+try { _store.set('oke_v10_tracker', JSON.stringify(predictions)); } catch(e) {}
+try { _store.set('oke_v10_used', JSON.stringify(usedScenarios)); } catch(e) {}
 }
 function loadAllData() {
-predictions = JSON.parse(localStorage.getItem('oke_v10_tracker') || '[]');
-usedScenarios = JSON.parse(localStorage.getItem('oke_v10_used') || '[]');
+try { predictions  = JSON.parse(_store.get('oke_v10_tracker') || '[]'); } catch(e) { predictions = []; }
+try { usedScenarios = JSON.parse(_store.get('oke_v10_used') || '[]'); } catch(e) { usedScenarios = []; }
 renderTracker(); checkOneWeekAlerts(); renderUsedHistory();
 }
 
@@ -584,13 +602,27 @@ let t = text
 // マークダウンのコードブロック `json ... ` を除去
 const fenced = t.match(/`(?:json)?\s*([\s\S]*?)`/);
 if (fenced) t = fenced[1].trim();
-// 先頭・末尾の余分なテキストを除去（{ または [ から始まる部分を抽出）
+// 先頭の余分なテキストを除去（最初の { または [ から始める）
 const jsonStart = t.search(/[{[]/);
 if (jsonStart > 0) t = t.slice(jsonStart);
-const jsonEnd = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
-if (jsonEnd >= 0 && jsonEnd < t.length - 1) t = t.slice(0, jsonEnd + 1);
-// JSON文字列値の中のバッククォートを除去（テンプレートリテラル混入対策）
-// 文字列値 "..." の中身だけを対象に処理
+// 末尾：対応する閉じ括弧までを切り出す（ネスト対応）
+if (t.length > 0) {
+const opener = t[0];
+const closer = opener === '{' ? '}' : ']';
+let depth = 0, inStr = false, esc = false, endIdx = -1;
+for (let i = 0; i < t.length; i++) {
+const c = t[i];
+if (esc) { esc = false; continue; }
+if (c === '\' && inStr) { esc = true; continue; }
+if (c === '"') { inStr = !inStr; continue; }
+if (!inStr) {
+if (c === opener) depth++;
+else if (c === closer) { depth–; if (depth === 0) { endIdx = i; break; } }
+}
+}
+if (endIdx >= 0) t = t.slice(0, endIdx + 1);
+}
+// JSON文字列値の中のバッククォートを除去
 t = t.replace(/"((?:[^"\\]|\\.)*)"/g, (match, inner) => {
 return '"' + inner.replace(/`/g, "'") + '"';
 });
@@ -902,6 +934,31 @@ document.getElementById('stockPromptArea').style.display = 'block';
 }
 
 // ─── STEP1-B 銘柄マージ → STEP2へ ───────────────────
+// ─── ファクト＆コンプラプロンプト生成 ────────────────────
+function _buildFactCheckPrompt() {
+if (!currentArticleData) return;
+const st = (currentArticleData.stocks || []).map(function(s) {
+return s.name + '(' + s.code + ') ' + s.currentPrice + '円 / ' + s.prediction;
+}).join(', ');
+const nw = (currentArticleData.newsChain || []).map(function(n, i) {
+return (i+1) + '. [' + (n.freshness === 'fresh' ? '24h以内' : '3-7日前') + '] ' + n.headline;
+}).join('\n');
+const body = (currentArticleData.causalStory || '');
+document.getElementById('factCheckPrompt').value =
+'【ファクト＆コンプライアンス統合チェック依頼】\n' +
+'【タイトル】' + currentArticleData.title + '\n\n' +
+'【注目銘柄】\n' + st + '\n\n' +
+'【ニュース連鎖】\n' + nw + '\n\n' +
+'【ストーリー全文】\n' + body + '\n\n' +
+'===ファクトチェック===\n' +
+'各銘柄をYahooファイナンス(finance.yahoo.co.jp)で確認。1000円未満か、証券コード正しいか。\n\n' +
+'===コンプライアンス(SNS個人発信・緩め)===\n' +
+'断定的推奨表現・風説の流布がないか確認。\n\n' +
+'===出力形式(JSONのみ)===\n' +
+'修正あり: {"revisedFields":{"stocks":[...],"causalStory":"..."},"changes":"...","complianceResult":"OK/NG"}\n' +
+'修正なし: {"revisedFields":{},"changes":"修正なし","complianceResult":"OK: 問題なし"}';
+}
+
 function applyStockAndMerge() {
 const txt = normalizeJSON(document.getElementById('stockJsonInput').value);
 if (!txt) return alert('銘柄JSONを貼り付けてください');
