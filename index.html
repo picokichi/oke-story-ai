@@ -696,7 +696,7 @@ const openingMeta = (currentArticleData.metaphors && currentArticleData.metaphor
 
 // X用：要約版
 const storySnippet = currentArticleData.causalStory.replace(/\n/g, ' ').substring(0, 55);
-const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '...\n\n🎯 注目低位株: ' + stocksLine + '\n\nあなたは何点？👇\n#株初心者 #低位株 #桶屋理論 #日本株';
+const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '...\n\n🎯 注目低位株: ' + stocksLine + '\n\n実現確率〇〇%👇\n#株初心者 #低位株 #桶屋理論 #日本株';
 
 // note用：全文Markdown（織り込み判定を選出理由に含める）
 let note = '# ' + currentArticleData.title + '\n\n';
