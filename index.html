@@ -217,6 +217,26 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   <div id="diffDisplay" style="display:none;" class="alert-banner"></div>
   <div id="complianceDisplay" style="display:none;margin-top:8px;"></div>
 
+  <!-- 株リテイクセクション -->
+
+  <hr>
+  <div class="label">🔄 選出株のリテイク</div>
+  <div style="font-size:13px;color:#64748b;margin-bottom:12px;">株情報が間違っていた場合・別の銘柄に変えたい場合に使います</div>
+  <div class="flex-btns" style="margin-bottom:12px;">
+    <button id="retakeAllStocksBtn" class="btn-secondary">🔁 株を丸ごと入れ替え</button>
+    <button id="retakeStockInfoBtn" class="btn-secondary">✏️ 株価・コードを個別修正</button>
+  </div>
+  <div id="retakeArea" style="display:none;">
+    <div id="retakePromptLabel" class="label" style="margin-top:0;font-size:13px;"></div>
+    <textarea id="retakePromptOutput" rows="5" readonly></textarea>
+    <div class="flex-btns">
+      <button id="copyRetakePromptBtn" class="btn-secondary">📋 コピー</button>
+    </div>
+    <div class="label" style="margin-top:12px;">✍️ AIの出力JSONを貼り付け</div>
+    <textarea id="retakeJsonInput" rows="4" placeholder='{"stocks": [...]}  または  {"name":"企業名","code":"1234","currentPrice":500}'></textarea>
+    <button id="applyRetakeBtn" class="btn-primary" style="margin-top:10px;">✅ 反映してプレビュー更新</button>
+  </div>
+
   <hr>
   <button id="approveFinalBtn" class="btn-primary" style="margin-top:4px;">📤 記事を確定・投稿テキストを生成 →</button>
 </div>
@@ -520,7 +540,7 @@ const closingMeta = (s.metaphors && s.metaphors.closing) || '';
 const NL = String.fromCharCode(10);
 currentArticleData = {
 title: s.title, newsChain: s.newsChain,
-causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ、実現確率何%だと思う？コメントで教えてください！',
+causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ実現確率何%だと思う？コメントで教えてください！',
 stocks: s.stocks || [], metaphor: openingMeta, metaphors: s.metaphors,
 probability: s.probability, probabilityReason: s.probabilityReason || ''
 };
@@ -591,21 +611,13 @@ document.getElementById('articlePreview').innerHTML =
 // ─── JSON正規化 ───────────────────────────────────
 function normalizeJSON(text) {
 let t = text
-// スマートクォート系（全バリエーション）
-.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036\u00AB\u00BB]/g, '"')
-.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
-// 全角スペース・特殊空白
 .replace(/[\u3000\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ')
-// 全角ダッシュ→ハイフン（JSONキーに混入対策）
 .replace(/[\u2014\u2013\u2015]/g, '-')
 .trim();
-// マークダウンのコードブロック `json ... ` を除去
 const fenced = t.match(/`(?:json)?\s*([\s\S]*?)`/);
 if (fenced) t = fenced[1].trim();
-// 先頭の余分なテキストを除去（最初の { または [ から始める）
 const jsonStart = t.search(/[{[]/);
 if (jsonStart > 0) t = t.slice(jsonStart);
-// 末尾：対応する閉じ括弧までを切り出す（ネスト対応）
 if (t.length > 0) {
 const opener = t[0];
 const closer = opener === '{' ? '}' : ']';
@@ -622,10 +634,14 @@ else if (c === closer) { depth--; if (depth === 0) { endIdx = i; break; } }
 }
 if (endIdx >= 0) t = t.slice(0, endIdx + 1);
 }
-// JSON文字列値の中のバッククォートを除去
-t = t.replace(/"((?:[^"\\]|\\.)*)"/g, (match, inner) => {
-return '"' + inner.replace(/`/g, "'") + '"';
+t = t.replace(/"((?:[^"\]|\.)*)"/g, function(match, inner) {
+const cleaned = inner
+.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036\u00AB\u00BB]/g, '\u300C')
+.replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, '\u2019')
+.replace(/`/g, "'");
+return '"' + cleaned + '"';
 });
+t = t.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036\u00AB\u00BB]/g, '"');
 return t;
 }
 
@@ -696,7 +712,7 @@ const openingMeta = (currentArticleData.metaphors && currentArticleData.metaphor
 
 // X用：要約版
 const storySnippet = currentArticleData.causalStory.replace(/\n/g, ' ').substring(0, 55);
-const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '...\n\n🎯 注目低位株: ' + stocksLine + '\n\n実現確率〇〇%👇\n#株初心者 #低位株 #桶屋理論 #日本株';
+const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '...\n\n🎯 注目低位株: ' + stocksLine + '\n\n実現確率〇〇%？👇\n#株初心者 #低位株 #桶屋理論 #日本株';
 
 // note用：全文Markdown（織り込み判定を選出理由に含める）
 let note = '# ' + currentArticleData.title + '\n\n';
@@ -729,7 +745,7 @@ note += '### ' + s.name + '（' + s.code + '）\n' +
 '- **選出理由＆織り込み判定**: ' + s.reasoning + '\n\n';
 });
 note += '—\n\n';
-note += '💬 **あなたはこのシナリオ、実現確率何%だと思いますか？** コメントで教えてください！\n\n';
+note += '💬 **あなたはこのシナリオ実現確率何%だと思いますか？** コメントで教えてください！\n\n';
 note += '⚠️ *この記事はAIが生成した情報です。投資判断はご自身の責任でお願いします。株式投資にはリスクが伴います。過去の実績は将来の成果を保証するものではありません。*';
 
 document.getElementById('xOutput').value = xContent;
@@ -812,17 +828,17 @@ showModal(txt, '全銘柄チェック用プロンプト');
 
 function parseAndApplyBatch(text) {
 const lines = text.split('\n'); let count = 0;
-const cp = /(?:銘柄|企業名)[:：]\s*([^\n（(]+)/;
+const cp = /(?:銘柄|企業名)[:：]\s*([^（\n]+)/;
 const rp = /判定[:：]\s*[【〔]?(的中|はずれ|当たり|外れ)[】〕]?/;
 let block = '';
 for (let i = 0; i <= lines.length; i++) {
 const l = lines[i] || ''; block += l + '\n';
-if ((l.match(/^(銘柄|企業名)/) || i === lines.length) && block.trim()) {
+if ((l.includes('銘柄') || l.includes('企業名') || i === lines.length) && block.trim()) {
 const cm = block.match(cp); const rm = block.match(rp);
 if (cm && rm) {
 const name = cm[1].trim();
 const status = (rm[1] === '的中' || rm[1] === '当たり') ? 'hit' : 'miss';
-const t = predictions.find(p => p.company === name && p.status === 'pending');
+const t = predictions.find(p => p.company.includes(name) && p.status === 'pending');
 if (t) { t.status = status; t.lastCheckDate = new Date().toISOString(); count++; }
 }
 block = '';
@@ -993,9 +1009,133 @@ const dot = document.getElementById('sd' + n);
 if (dot) dot.addEventListener('click', () => navigateToStep(n));
 });
 
+// ─── 株リテイク機能 ───────────────────────────────────────────
+let retakeMode = ''; // 'all' or 'info'
+
+function showRetakeArea(mode) {
+retakeMode = mode;
+const area = document.getElementById('retakeArea');
+const label = document.getElementById('retakePromptLabel');
+const output = document.getElementById('retakePromptOutput');
+const input = document.getElementById('retakeJsonInput');
+area.style.display = 'block';
+input.value = '';
+
+const isUS = document.title.includes('US');
+
+if (mode === 'all') {
+// 株丸ごと入れ替え → 株探しプロンプトを再生成
+label.textContent = '📋 株探しプロンプト（AIにコピペ）';
+const story = (currentArticleData.causalStory || '').replace(/`/g, "'");
+const priceCheck = isUS
+? 'Yahoo Finance(finance.yahoo.com)で確認。$10未満のNYSE/NASDAQ銘柄のみ。'
+: 'Yahooファイナンス(finance.yahoo.co.jp)で確認。1000円未満の東証銘柄のみ。';
+const codeLabel = isUS ? 'ティッカーシンボル' : '証券コード';
+const priceUnit = isUS ? '株価（ドル、数値のみ）' : '株価（円、数値のみ）';
+const lines = [
+'【株入れ替えリテイク】',
+'以下の記事ストーリーのテーマに合う注目銘柄を1〜2社探してください。',
+'（現在の銘柄: ' + (currentArticleData.stocks || []).map(function(s){ return s.name + '(' + s.code + ')'; }).join(', ') + ' → これを入れ替えます）',
+'',
+'【記事タイトル】',
+currentArticleData.title,
+'',
+'【ストーリー全文】',
+story,
+'',
+'【ルール】',
+'・' + priceCheck,
+'・記憶の株価は使用禁止',
+'・織り込み判定（価格反応・時間軸・市場の広がり・初動/中盤/終盤）をreasoningに含める',
+'',
+'【出力形式】JSONのみ',
+'{"stocks":[{"name":"企業名","code":"' + codeLabel + '","currentPrice":' + priceUnit + ',"prediction":"up","reasoning":"選出理由と織り込み判定"}]}'
+];
+output.value = lines.join('\n');
+
+} else {
+// 個別情報修正 → 現在の株情報を渡して修正依頼
+label.textContent = '📋 株価・コード修正プロンプト（AIにコピペ）';
+const isUSFlag = isUS;
+const stockInfo = (currentArticleData.stocks || []).map(function(s, i) {
+return (i+1) + '. ' + s.name + ' / コード: ' + s.code + ' / 現在株価: ' + (isUSFlag ? '$' : '') + s.currentPrice + (isUSFlag ? '' : '円');
+}).join('\n');
+const site = isUS ? 'Yahoo Finance(finance.yahoo.com)' : 'Yahooファイナンス(finance.yahoo.co.jp)';
+const limit = isUS ? '$10未満' : '1000円未満';
+const lines = [
+'【株価・コード修正依頼】',
+'以下の銘柄情報をウェブ検索で確認し、正しい情報に修正してください。',
+'',
+'【現在の銘柄情報】',
+stockInfo,
+'',
+'【確認事項】',
+'・' + site + 'で各銘柄の現在株価を確認',
+'・株価が' + limit + 'であること（超えていたら「対象外」と記載）',
+'・証券コード/ティッカーが正しいか確認',
+'',
+'【出力形式】JSONのみ。修正のある銘柄だけ返す。',
+'{"stocks":[{"name":"企業名","code":"修正後コード","currentPrice":修正後株価,"prediction":"up","reasoning":"既存のreasoningをそのまま維持"}]}'
+];
+output.value = lines.join('\n');
+}
+
+window.scrollTo({ top: document.getElementById('retakeArea').offsetTop - 20, behavior: 'smooth' });
+}
+
+function applyRetake() {
+const txt = normalizeJSON(document.getElementById('retakeJsonInput').value);
+if (!txt) return alert('JSONを貼り付けてください');
+try {
+const obj = JSON.parse(txt);
+const newStocks = obj.stocks || (Array.isArray(obj) ? obj : null);
+if (!newStocks || newStocks.length === 0) throw new Error('"stocks" 配列が見つかりません');
+
+if (retakeMode === 'all') {
+  // 丸ごと入れ替え
+  currentArticleData.stocks = newStocks;
+} else {
+  // 個別修正：nameかcodeで既存銘柄を検索して上書き
+  newStocks.forEach(function(ns) {
+    const idx = (currentArticleData.stocks || []).findIndex(function(s) {
+      return s.name === ns.name || s.code === ns.code;
+    });
+    if (idx >= 0) {
+      // reasoningが空なら既存を維持
+      if (!ns.reasoning) ns.reasoning = currentArticleData.stocks[idx].reasoning;
+      currentArticleData.stocks[idx] = ns;
+    } else {
+      // 見つからなければ追加
+      currentArticleData.stocks.push(ns);
+    }
+  });
+}
+
+// プレビュー更新
+displayPreview(currentArticleData);
+_buildFactCheckPrompt();
+document.getElementById('retakeArea').style.display = 'none';
+document.getElementById('retakeJsonInput').value = '';
+
+// 成功メッセージ
+const diff = document.getElementById('diffDisplay');
+diff.style.display = 'block';
+diff.innerHTML = retakeMode === 'all'
+  ? '🔁 選出株を入れ替えました: ' + newStocks.map(function(s){ return s.name + '(' + s.code + ')'; }).join(', ')
+  : '✏️ 株情報を修正しました: ' + newStocks.map(function(s){ return s.name + ' → ' + s.code + ' / ' + s.currentPrice; }).join(', ');
+
+window.scrollTo({ top: document.getElementById('previewCard').offsetTop - 20, behavior: 'smooth' });
+
+} catch(e) { alert('JSONの読み込み失敗:\n' + e.message); }
+}
+
 document.getElementById('generateStockPromptBtn').onclick = generateStockPrompt;
 document.getElementById('copyStockPromptBtn').onclick = () => copyText('stockPromptOutput');
 document.getElementById('applyStockBtn').onclick = applyStockAndMerge;
+document.getElementById('retakeAllStocksBtn').onclick = function() { showRetakeArea('all'); };
+document.getElementById('retakeStockInfoBtn').onclick = function() { showRetakeArea('info'); };
+document.getElementById('copyRetakePromptBtn').onclick = function() { copyText('retakePromptOutput'); };
+document.getElementById('applyRetakeBtn').onclick = applyRetake;
 initAiSelectors();
 loadAllData();
 </script>
