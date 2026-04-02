@@ -544,7 +544,7 @@ const closingMeta = (s.metaphors && s.metaphors.closing) || '';
 const NL = String.fromCharCode(10);
 currentArticleData = {
 title: s.title, newsChain: s.newsChain,
-causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ、何点だと思う？コメントで教えてください！',
+causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ実現確率何%だと思う？コメントで教えてください！',
 stocks: s.stocks || [], metaphor: openingMeta, metaphors: s.metaphors,
 probability: s.probability, probabilityReason: s.probabilityReason || ''
 };
@@ -786,7 +786,7 @@ note += '### ' + s.name + '（' + s.code + '）\n' +
 '- **選出理由＆織り込み判定**: ' + s.reasoning + '\n\n';
 });
 note += '—\n\n';
-note += '💬 **あなたはこのシナリオ、何点だと思いますか？** コメントで教えてください！\n\n';
+note += '💬 **あなたはこのシナリオ実現確率何%だと思いますか？** コメントで教えてください！\n\n';
 note += '⚠️ *この記事はAIが生成した情報です。投資判断はご自身の責任でお願いします。株式投資にはリスクが伴います。過去の実績は将来の成果を保証するものではありません。*';
 
 document.getElementById('xOutput').value = xContent;
