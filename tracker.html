@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+<title>予測トラッカー | 桶屋ストーリーAI</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --navy: #1e3c72; --navy-dark: #0f2b4f; --navy-light: #f0f4fa;
+  --green: #10b981; --green-light: #dcfce7; --green-dark: #166534;
+  --red: #ef4444; --red-light: #fee2e2; --red-dark: #991b1b;
+  --amber: #f59e0b; --amber-light: #fef3c7; --amber-dark: #92400e;
+  --slate: #475569; --border: #e2edf7; --bg: #f5f7fb; --card: #ffffff;
+  --gray: #94a3b8; --gray-light: #f1f5f9;
+}
+body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif; padding: 16px; color: #1e293b; font-size: 16px; line-height: 1.6; }
+.container { max-width: 600px; margin: 0 auto; }
+
+/* ヘッダー */
+.app-header { text-align: center; padding: 20px 0 12px; }
+.app-header h1 { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -0.5px; }
+.app-header p { font-size: 13px; color: var(--slate); margin-top: 4px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; background: var(--navy-light); color: var(--navy); border: 1px solid var(--border); border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; margin-bottom: 16px; }
+.back-link:active { background: #dce8f5; }
+
+/* カード共通 */
+.card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #eef2f6; }
+.section-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+/* サマリーカード */
+.summary-card { background: linear-gradient(135deg, #0f2b4f, #1e3c72); border-radius: 20px; padding: 20px; margin-bottom: 16px; color: white; }
+.summary-title { font-size: 13px; opacity: 0.75; margin-bottom: 6px; }
+.accuracy-big { font-size: 42px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
+.accuracy-sub { font-size: 13px; opacity: 0.75; margin-top: 4px; }
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.summary-cell { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; text-align: center; }
+.summary-cell-num { font-size: 22px; font-weight: 800; }
+.summary-cell-label { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+
+/* アラートバナー */
+.alert-banner { border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; font-size: 14px; display: flex; align-items: flex-start; gap: 10px; }
+.alert-d3 { background: #fff7ed; border-left: 4px solid #fb923c; }
+.alert-w1 { background: var(--amber-light); border-left: 4px solid var(--amber); }
+.alert-m1 { background: #fdf2f8; border-left: 4px solid #c026d3; }
+.alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.alert-body { flex: 1; }
+.alert-body strong { font-size: 13px; display: block; margin-bottom: 2px; }
+.alert-body span { font-size: 12px; color: #64748b; }
+.alert-action { display: inline-flex; align-items: center; gap: 4px; background: var(--navy); color: white; border: none; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 6px; }
+.alert-action:active { background: var(--navy-dark); }
+
+/* 月次グループ */
+.month-group { margin-bottom: 20px; }
+.month-header { font-size: 13px; font-weight: 700; color: var(--slate); background: var(--gray-light); border-radius: 10px; padding: 6px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.month-stats { font-size: 11px; color: var(--gray); font-weight: 500; }
+
+/* 予測カード */
+.prediction-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+.prediction-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.company-name { font-size: 15px; font-weight: 700; color: #1e293b; }
+.company-code { font-size: 12px; color: var(--gray); font-weight: 500; margin-top: 1px; }
+.direction-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.direction-up { background: #ecfdf5; color: #065f46; }
+.direction-down { background: var(--red-light); color: var(--red-dark); }
+
+.publish-info { font-size: 12px; color: var(--gray); background: var(--gray-light); border-radius: 8px; padding: 6px 10px; margin-bottom: 10px; }
+.publish-price { font-weight: 600; color: #334155; }
+
+/* 3段階チェックライン */
+.check-timeline { display: flex; flex-direction: column; gap: 6px; }
+.check-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: #fafcff; }
+.check-row.check-due { border-color: var(--amber); background: var(--amber-light); }
+.check-row.check-hit { border-color: var(--green); background: var(--green-light); }
+.check-row.check-miss { border-color: var(--red); background: var(--red-light); }
+.check-row.check-ignored { opacity: 0.5; }
+.check-label { font-size: 11px; font-weight: 700; color: var(--navy); min-width: 36px; }
+.check-date { font-size: 11px; color: var(--gray); min-width: 44px; }
+.check-result { flex: 1; font-size: 13px; color: #334155; }
+.check-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; white-space: nowrap; }
+.badge-hit { background: var(--green-light); color: var(--green-dark); }
+.badge-miss { background: var(--red-light); color: var(--red-dark); }
+.badge-pending { background: var(--amber-light); color: var(--amber-dark); }
+.badge-waiting { background: var(--gray-light); color: var(--gray); }
+.badge-ignored { background: #f1f5f9; color: #94a3b8; }
+
+/* 株価入力モーダル */
+.modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; z-index: 100; padding: 0; }
+.modal-sheet { background: white; border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; padding: 20px; animation: slideUp 0.25s ease; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: var(--slate); margin-bottom: 16px; }
+.modal-yahoo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: #fff7e6; border: 1px solid #fed7aa; color: #9a3412; border-radius: 14px; padding: 12px; font-size: 14px; font-weight: 600; text-decoration: none; margin-bottom: 14px; }
+.modal-yahoo-btn:active { background: #ffedd5; }
+.price-input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.price-input { flex: 1; padding: 14px; border-radius: 14px; border: 2px solid var(--border); font-size: 20px; font-weight: 700; text-align: center; color: var(--navy); }
+.price-input:focus { outline: none; border-color: var(--navy); }
+.price-unit { font-size: 15px; color: var(--slate); font-weight: 600; }
+.modal-calc-preview { background: var(--navy-light); border-radius: 12px; padding: 10px 14px; font-size: 14px; color: var(--navy); margin-bottom: 14px; min-height: 42px; }
+.modal-btns { display: flex; gap: 10px; }
+.btn-confirm { flex: 1; background: var(--navy); color: white; border: none; border-radius: 14px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.btn-confirm:active { background: var(--navy-dark); }
+.btn-cancel { background: var(--gray-light); color: var(--slate); border: none; border-radius: 14px; padding: 14px 20px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-cancel:active { background: #e2e8f0; }
+
+/* ボタン */
+.btn-primary { cursor: pointer; background: var(--navy); color: white; padding: 14px 20px; font-size: 16px; width: 100%; border: none; border-radius: 44px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-primary:active { background: var(--navy-dark); }
+.btn-secondary { cursor: pointer; background: var(--gray-light); color: var(--navy); border: 1px solid #cbd5e1; padding: 10px 16px; font-size: 14px; border-radius: 44px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.btn-secondary:active { background: #e2e8f0; }
+.btn-small { cursor: pointer; background: var(--gray-light); color: var(--navy); border: 1px solid #cbd5e1; padding: 7px 12px; font-size: 12px; border-radius: 20px; font-weight: 600; }
+.btn-small:active { background: #e2e8f0; }
+.btn-danger { cursor: pointer; background: var(--red-light); color: var(--red-dark); border: 1px solid #fecaca; padding: 8px 14px; font-size: 13px; border-radius: 44px; font-weight: 600; }
+
+textarea { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid #cfdfed; font-family: 'SF Mono', 'Menlo', monospace; font-size: 13px; background: #fafcff; resize: vertical; line-height: 1.5; }
+.empty-state { text-align: center; padding: 30px 20px; color: var(--gray); font-size: 14px; line-height: 1.8; }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.footer-note { font-size: 12px; text-align: center; color: #7e8b9e; margin-top: 12px; line-height: 1.6; }
+hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
+
+/* 判定ルール表示 */
+.rule-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.rule-cell { background: var(--navy-light); border-radius: 10px; padding: 8px 10px; text-align: center; font-size: 12px; }
+.rule-cell-label { color: var(--slate); font-size: 11px; margin-bottom: 3px; }
+.rule-cell-value { font-weight: 700; color: var(--navy); }
+</style>
+
+</head>
+<body>
+<div class="container">
+
+<div class="app-header">
+  <h1>📊 予測トラッカー</h1>
+  <p>桶屋ストーリーAI — 予測の記録と検証</p>
+</div>
+
+<a href="index.html" class="back-link">← 記事生成に戻る</a>
+
+<!-- サマリー -->
+
+<div class="summary-card" id="summaryCard">
+  <div class="summary-title">予測的中率</div>
+  <div class="accuracy-big" id="accuracyBig">—</div>
+  <div class="accuracy-sub" id="accuracySub">まだ判定済みデータがありません</div>
+  <div class="summary-grid">
+    <div class="summary-cell"><div class="summary-cell-num" id="hitCount">0</div><div class="summary-cell-label">✅ 的中</div></div>
+    <div class="summary-cell"><div class="summary-cell-num" id="missCount">0</div><div class="summary-cell-label">❌ はずれ</div></div>
+    <div class="summary-cell"><div class="summary-cell-num" id="pendingCount">0</div><div class="summary-cell-label">⏳ 判定待ち</div></div>
+  </div>
+</div>
+
+<!-- アラートエリア -->
+
+<div id="alertArea"></div>
+
+<!-- 判定ルール（折りたたみ） -->
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="ruleToggle">
+    <span style="font-size:14px;font-weight:700;">📏 判定ルール</span>
+    <span style="font-size:12px;color:var(--gray);" id="ruleToggleIcon">▼ 表示</span>
+  </div>
+  <div id="ruleBody" style="display:none;margin-top:12px;">
+    <div style="font-size:13px;color:var(--slate);margin-bottom:8px;">記事公開時の株価を基準に、各タイミングで判定します</div>
+    <div class="rule-grid">
+      <div class="rule-cell"><div class="rule-cell-label">上昇予想</div><div class="rule-cell-value">+5%以上</div></div>
+      <div class="rule-cell"><div class="rule-cell-label">横ばい予想</div><div class="rule-cell-value">±3%以内</div></div>
+      <div class="rule-cell"><div class="rule-cell-label">下落予想</div><div class="rule-cell-value">-5%以下</div></div>
+    </div>
+    <hr>
+    <div style="font-size:13px;color:var(--slate);line-height:1.8;">
+      <strong>的中率の計算ルール</strong><br>
+      • 最終（1ヶ月）判定あり → 最終のみで計算<br>
+      • 途中（1週間）まで → 途中で計算<br>
+      • 初動（3日）のみ → 計算対象外（データ蓄積）<br>
+      • 未判定 → 計算対象外
+    </div>
+  </div>
+</div>
+
+<!-- 予測一覧（月次） -->
+
+<div id="predictionsArea">
+  <div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <div>まだ予測データがありません<br><a href="index.html" style="color:var(--navy);font-weight:600;">記事を公開して予測を登録する →</a></div>
+  </div>
+</div>
+
+<!-- 株価入力モーダル -->
+
+<div id="modalOverlay" class="modal-overlay" style="display:none;" onclick="closeModalOnBg(event)">
+  <div class="modal-sheet" id="modalSheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">株価を入力</div>
+    <div class="modal-sub" id="modalSub"></div>
+    <a id="modalYahooBtn" href="#" target="_blank" class="modal-yahoo-btn">
+      📈 Yahooファイナンスで確認する
+    </a>
+    <div style="font-size:13px;color:var(--slate);margin-bottom:8px;">現在株価を入力してください</div>
+    <div class="price-input-group">
+      <input id="priceInput" type="number" class="price-input" placeholder="0" min="1" max="99999" inputmode="decimal">
+      <span class="price-unit">円</span>
+    </div>
+    <div class="modal-calc-preview" id="calcPreview">株価を入力すると変化率を計算します</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-confirm" id="modalConfirmBtn">判定を確定する</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ─── localStorage ラッパー ───
+const _store = (function() {
+  const mem = {};
+  try {
+    localStorage.setItem('__test__', '1');
+    localStorage.removeItem('__test__');
+    return {
+      get: function(k) { return localStorage.getItem(k); },
+      set: function(k, v) { localStorage.setItem(k, v); },
+    };
+  } catch(e) {
+    return {
+      get: function(k) { return mem[k] !== undefined ? mem[k] : null; },
+      set: function(k, v) { mem[k] = v; },
+    };
+  }
+})();
+
+let predictions = [];
+
+// ─── データ読み込み ───
+function loadData() {
+  try { predictions = JSON.parse(_store.get('oke-story-ai') || '[]'); } catch(e) { predictions = []; }
+  // 旧データ互換: checksフィールドがない場合は補完
+  predictions = predictions.map(function(p) {
+    if (!p.checks) p.checks = { d3: null, w1: null, m1: null };
+    return p;
+  });
+  render();
+}
+
+function saveData() {
+  try { _store.set('oke-story-ai', JSON.stringify(predictions)); } catch(e) {}
+}
+
+// ─── 日付ユーティリティ ───
+function addDays(isoDate, days) {
+  const d = new Date(isoDate);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+function formatDate(date) {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  return m + '/' + d;
+}
+function formatYMD(date) {
+  return date.getFullYear() + '年' + (date.getMonth()+1) + '月';
+}
+function isDue(isoDate, days) {
+  return new Date() >= addDays(isoDate, days);
+}
+
+// ─── 的中判定ロジック ───
+function judgeResult(basePrice, currentPrice, direction) {
+  if (!basePrice || !currentPrice) return null;
+  const pct = ((currentPrice - basePrice) / basePrice) * 100;
+  if (direction === 'up') return pct >= 5 ? 'hit' : 'miss';
+  if (direction === 'down') return pct <= -5 ? 'hit' : 'miss';
+  if (direction === 'flat') return Math.abs(pct) <= 3 ? 'hit' : 'miss';
+  // upがデフォルト
+  return pct >= 5 ? 'hit' : 'miss';
+}
+
+function calcPct(basePrice, currentPrice) {
+  if (!basePrice || !currentPrice) return null;
+  return ((currentPrice - basePrice) / basePrice) * 100;
+}
+
+// ─── 的中率計算 ───
+function calcAccuracy() {
+  let hit = 0, miss = 0, pending = 0;
+  predictions.forEach(function(p) {
+    const c = p.checks;
+    // 最終あり → 最終のみ
+    if (c.m1 && c.m1.result) {
+      if (c.m1.result === 'hit') hit++;
+      else miss++;
+      return;
+    }
+    // 途中あり（最終なし）
+    if (c.w1 && c.w1.result) {
+      if (c.w1.result === 'hit') hit++;
+      else miss++;
+      return;
+    }
+    // 初動のみ or 未判定 → 対象外
+    pending++;
+  });
+  return { hit, miss, pending, total: hit + miss };
+}
+
+// ─── アラート生成 ───
+function buildAlerts() {
+  const alerts = [];
+  const now = new Date();
+  predictions.forEach(function(p) {
+    const c = p.checks;
+    const d3Due = addDays(p.publishDate, 3);
+    const w1Due = addDays(p.publishDate, 7);
+    const m1Due = addDays(p.publishDate, 30);
+
+    // 3日後アラート（未判定かつ期限超過）
+    if (!c.d3 && now >= d3Due) {
+      alerts.push({ type: 'd3', p: p, dueDate: d3Due, label: '初動判定（3日後）' });
+    }
+    // 1週間後（3日判定済み、1週間未判定）
+    if (c.d3 && !c.w1 && now >= w1Due) {
+      alerts.push({ type: 'w1', p: p, dueDate: w1Due, label: '途中判定（1週間後）' });
+    }
+    // 1ヶ月後（1週間判定済み、最終未判定）
+    if (c.w1 && !c.m1 && now >= m1Due) {
+      alerts.push({ type: 'm1', p: p, dueDate: m1Due, label: '最終判定（1ヶ月後）' });
+    }
+  });
+  return alerts;
+}
+
+// ─── レンダリング ───
+function render() {
+  renderSummary();
+  renderAlerts();
+  renderPredictions();
+}
+
+function renderSummary() {
+  const acc = calcAccuracy();
+  const pct = acc.total > 0 ? Math.round(acc.hit / acc.total * 100) : null;
+  document.getElementById('accuracyBig').textContent = pct !== null ? pct + '%' : '—';
+  document.getElementById('accuracySub').textContent = pct !== null
+    ? '的中率 ' + acc.hit + '/' + acc.total + '件（途中経過含む）'
+    : 'まだ判定済みデータがありません';
+  document.getElementById('hitCount').textContent = acc.hit;
+  document.getElementById('missCount').textContent = acc.miss;
+  document.getElementById('pendingCount').textContent = acc.pending;
+}
+
+function renderAlerts() {
+  const alerts = buildAlerts();
+  const el = document.getElementById('alertArea');
+  if (!alerts.length) { el.innerHTML = ''; return; }
+  const typeConfig = {
+    d3: { cls: 'alert-d3', icon: '⚡', color: '#9a3412' },
+    w1: { cls: 'alert-w1', icon: '⏰', color: var_amber_dark() },
+    m1: { cls: 'alert-m1', icon: '🏁', color: '#701a75' }
+  };
+  function var_amber_dark() { return '#92400e'; }
+  el.innerHTML = alerts.slice(0, 5).map(function(a) {
+    const cfg = typeConfig[a.type];
+    return '<div class="alert-banner ' + cfg.cls + '">' +
+      '<div class="alert-icon">' + cfg.icon + '</div>' +
+      '<div class="alert-body">' +
+        '<strong>' + a.label + '：' + a.p.company + '（' + a.p.code + '）</strong>' +
+        '<span>公開時 ' + a.p.priceAtPrediction + '円 / ' + (a.p.direction === 'up' ? '上昇予想' : '下落予想') + '</span>' +
+        '<br><button class="alert-action" onclick="openModal(\'' + a.p.id + '\',\'' + a.type + '\')">' +
+          '📊 株価を入力して判定する' +
+        '</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function renderPredictions() {
+  const el = document.getElementById('predictionsArea');
+  if (!predictions.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div>まだ予測データがありません<br><a href="index.html" style="color:var(--navy);font-weight:600;">記事を公開して予測を登録する →</a></div></div>';
+    return;
+  }
+
+  // 月次グループ化
+  const groups = {};
+  predictions.forEach(function(p) {
+    const d = new Date(p.publishDate);
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if (!groups[key]) groups[key] = { label: formatYMD(d), items: [] };
+    groups[key].items.push(p);
+  });
+
+  // 新しい月から表示
+  const sortedKeys = Object.keys(groups).sort().reverse();
+  el.innerHTML = sortedKeys.map(function(key) {
+    const g = groups[key];
+    // 月次集計
+    const monthAcc = calcMonthAccuracy(g.items);
+    const monthStat = monthAcc.total > 0
+      ? '的中 ' + monthAcc.hit + '/' + monthAcc.total
+      : '判定待ち';
+
+    return '<div class="month-group">' +
+      '<div class="month-header"><span>' + g.label + '</span><span class="month-stats">' + monthStat + '</span></div>' +
+      g.items.map(function(p) { return renderPredictionCard(p); }).join('') +
+      '</div>';
+  }).join('');
+}
+
+function calcMonthAccuracy(items) {
+  let hit = 0, miss = 0;
+  items.forEach(function(p) {
+    const c = p.checks;
+    if (c.m1 && c.m1.result) { c.m1.result === 'hit' ? hit++ : miss++; return; }
+    if (c.w1 && c.w1.result) { c.w1.result === 'hit' ? hit++ : miss++; return; }
+  });
+  return { hit, miss, total: hit + miss };
+}
+
+function renderPredictionCard(p) {
+  const c = p.checks;
+  const pub = new Date(p.publishDate);
+  const d3Due = addDays(p.publishDate, 3);
+  const w1Due = addDays(p.publishDate, 7);
+  const m1Due = addDays(p.publishDate, 30);
+  const now = new Date();
+
+  // 最終判定の有無で全体ステータス
+  const finalResult = c.m1 ? c.m1.result : (c.w1 ? c.w1.result : null);
+  const cardBorderColor = finalResult === 'hit' ? '#10b981' : finalResult === 'miss' ? '#ef4444' : '#e2edf7';
+
+  function checkRowHtml(type, label, dueDate, checkData, isDueNow, isIgnored) {
+    let cls = '';
+    let content = '';
+    let badge = '';
+    const dueDateStr = formatDate(dueDate);
+
+    if (checkData && checkData.price) {
+      const pct = calcPct(p.priceAtPrediction, checkData.price);
+      const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+      content = checkData.price + '円 ⇒ <strong>' + pctStr + '</strong>';
+      if (isIgnored) {
+        cls = 'check-ignored';
+        badge = '<span class="check-badge badge-ignored">参考</span>';
+      } else if (checkData.result === 'hit') {
+        cls = 'check-hit';
+        badge = '<span class="check-badge badge-hit">✅ 的中</span>';
+      } else {
+        cls = 'check-miss';
+        badge = '<span class="check-badge badge-miss">❌ はずれ</span>';
+      }
+    } else if (isDueNow && !checkData) {
+      cls = 'check-due';
+      content = '判定時期です';
+      badge = '<button class="btn-small" onclick="openModal(\'' + p.id + '\',\'' + type + '\')">入力する</button>';
+    } else if (!isDueNow) {
+      content = dueDateStr + ' 以降に判定可能';
+      badge = '<span class="check-badge badge-waiting">待機中</span>';
+    } else {
+      content = '—';
+      badge = '<span class="check-badge badge-pending">⏳</span>';
+    }
+
+    return '<div class="check-row ' + cls + '">' +
+      '<span class="check-label">' + label + '</span>' +
+      '<span class="check-date">' + dueDateStr + '</span>' +
+      '<span class="check-result">' + content + '</span>' +
+      badge +
+      '</div>';
+  }
+
+  // 初動は常に表示。途中・最終は前のステップが完了後に入力可能
+  const d3Done = !!(c.d3 && c.d3.price);
+  const w1Done = !!(c.w1 && c.w1.price);
+
+  // 最終がある場合、初動・途中は「参考」扱い
+  const m1Exists = !!(c.m1 && c.m1.price);
+  const w1Exists = !!(c.w1 && c.w1.price);
+
+  const d3Row = checkRowHtml('d3', '初動', d3Due, c.d3, isDue(p.publishDate, 3), m1Exists || (w1Exists && !m1Exists ? false : m1Exists));
+  const w1Row = checkRowHtml('w1', '途中', w1Due, c.w1, d3Done && isDue(p.publishDate, 7), m1Exists);
+  const m1Row = checkRowHtml('m1', '最終', m1Due, c.m1, w1Done && isDue(p.publishDate, 30), false);
+
+  const title = p.articleTitle ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + p.articleTitle + '</div>' : '';
+
+  return '<div class="prediction-card" style="border-color:' + cardBorderColor + ';">' +
+    '<div class="prediction-header">' +
+      '<div><div class="company-name">' + p.company + '</div><div class="company-code">証券コード: ' + p.code + '</div>' + title + '</div>' +
+      '<span class="direction-badge ' + (p.direction === 'up' ? 'direction-up' : 'direction-down') + '">' +
+        (p.direction === 'up' ? '📈 上昇予想' : '📉 下落予想') +
+      '</span>' +
+    '</div>' +
+    '<div class="publish-info">公開日: ' + formatDate(pub) + '　基準株価: <span class="publish-price">' + p.priceAtPrediction + '円</span></div>' +
+    '<div class="check-timeline">' + d3Row + w1Row + m1Row + '</div>' +
+    '</div>';
+}
+
+// ─── モーダル ───
+let _modalPredId = null;
+let _modalType = null;
+
+function openModal(predId, type) {
+  _modalPredId = predId;
+  _modalType = type;
+  const p = predictions.find(function(x) { return String(x.id) === String(predId); });
+  if (!p) return;
+
+  const typeLabel = { d3: '初動（3日後）', w1: '途中経過（1週間後）', m1: '最終判定（1ヶ月後）' };
+  document.getElementById('modalTitle').textContent = p.company + '（' + p.code + '）';
+  document.getElementById('modalSub').textContent = typeLabel[type] + '　基準株価: ' + p.priceAtPrediction + '円 / ' + (p.direction === 'up' ? '上昇予想' : '下落予想');
+  document.getElementById('modalYahooBtn').href = 'https://finance.yahoo.co.jp/quote/' + p.code + '.T';
+  document.getElementById('priceInput').value = '';
+  document.getElementById('calcPreview').textContent = '株価を入力すると変化率を計算します';
+  document.getElementById('modalOverlay').style.display = 'flex';
+
+  // リアルタイム計算プレビュー
+  const priceInput = document.getElementById('priceInput');
+  priceInput.oninput = function() {
+    const cur = parseFloat(this.value);
+    if (!cur || cur <= 0) { document.getElementById('calcPreview').textContent = '株価を入力すると変化率を計算します'; return; }
+    const pct = calcPct(p.priceAtPrediction, cur);
+    const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    const result = judgeResult(p.priceAtPrediction, cur, p.direction);
+    const resultStr = result === 'hit' ? '✅ 的中' : '❌ はずれ';
+    document.getElementById('calcPreview').textContent = p.priceAtPrediction + '円 → ' + cur + '円　変化率: ' + pctStr + '　判定: ' + resultStr;
+  };
+
+  document.getElementById('modalConfirmBtn').onclick = function() {
+    const cur = parseFloat(priceInput.value);
+    if (!cur || cur <= 0) { alert('株価を入力してください'); return; }
+    const result = judgeResult(p.priceAtPrediction, cur, p.direction);
+    p.checks[type] = { price: cur, result: result, checkedAt: new Date().toISOString() };
+    saveData();
+    closeModal();
+    render();
+  };
+
+  setTimeout(function() { priceInput.focus(); }, 300);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  _modalPredId = null;
+  _modalType = null;
+}
+
+function closeModalOnBg(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+// ─── 判定ルール折りたたみ ───
+document.getElementById('ruleToggle').onclick = function() {
+  const body = document.getElementById('ruleBody');
+  const icon = document.getElementById('ruleToggleIcon');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  icon.textContent = isOpen ? '▼ 表示' : '▲ 非表示';
+};
+
+// ─── 初期化 ───
+loadData();
+</script>
+
+</body>
+</html>
