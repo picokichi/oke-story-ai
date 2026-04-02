@@ -246,8 +246,12 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
 <div class="card" id="finalOutputCard" style="display:none;">
   <div class="label">📢 STEP 4 — 正式記事</div>
 
+  <div class="label" style="margin-top:4px;">📝 noteに投稿後、URLを貼り付け</div>
+  <div style="font-size:13px;color:#64748b;margin-bottom:8px;">noteに公開したらURLをここに貼り付けてください。X投稿テキストに自動反映されます</div>
+  <input id="noteUrlInput" type="url" placeholder="https://note.com/..." style="width:100%;padding:12px 14px;border-radius:16px;border:1px solid #cfdfed;font-size:14px;background:#fafcff;margin-bottom:12px;" />
   <div class="label" style="margin-top:4px;">🐦 X（Twitter）投稿用 — 要約版</div>
-  <textarea id="xOutput" rows="6" readonly></textarea>
+  <div style="font-size:12px;color:#64748b;margin-bottom:8px;">noteのURLを入力すると自動更新されます</div>
+  <textarea id="xOutput" rows="8" readonly></textarea>
   <div class="flex-btns">
     <button id="copyXBtn" class="btn-secondary">📋 X用コピー</button>
     <button id="openXBtn" class="btn-x">𝕏 Xに投稿する</button>
@@ -540,7 +544,7 @@ const closingMeta = (s.metaphors && s.metaphors.closing) || '';
 const NL = String.fromCharCode(10);
 currentArticleData = {
 title: s.title, newsChain: s.newsChain,
-causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ実現確率何%だと思う？コメントで教えてください！',
+causalStory: s.causalStory + NL + NL + (closingMeta ? closingMeta + NL + NL : '') + '📌 あなたはこのシナリオ、何点だと思う？コメントで教えてください！',
 stocks: s.stocks || [], metaphor: openingMeta, metaphors: s.metaphors,
 probability: s.probability, probabilityReason: s.probabilityReason || ''
 };
@@ -712,7 +716,44 @@ const openingMeta = (currentArticleData.metaphors && currentArticleData.metaphor
 
 // X用：要約版
 const storySnippet = currentArticleData.causalStory.replace(/\n/g, ' ').substring(0, 55);
-const xContent = '📈【桶屋ストーリーAI】\n' + currentArticleData.title + '\n\n実現確率' + prob + '%のシナリオ\n\n' + storySnippet + '...\n\n🎯 注目低位株: ' + stocksLine + '\n\n実現確率〇〇%？👇\n#株初心者 #低位株 #桶屋理論 #日本株';
+// フェーズ・織り込み抽出
+const _fr = (stocks[0] && stocks[0].reasoning) || '';
+const _ph = _fr.match(/初動|中盤|終盤/);
+const _phaseStr = _ph ? _ph[0] + 'フェーズと読む' : '';
+const _phaseTag = _phaseStr ? '｜' + _phaseStr : '';
+
+// 銘柄リスト（数に応じて動的生成）
+const _countLabels = ['1社','2社','3社','4社','5社'];
+const _countStr = _countLabels[stocks.length - 1] || stocks.length + '社';
+const _stockLines = stocks.map(function(s) {
+const r = s.reasoning || '';
+const ph = r.match(/初動|中盤|終盤/);
+const pr = r.match(/未織り込み|織り込み済み/);
+const tag = [ph ? ph[0] : '', pr ? pr[0] : ''].filter(Boolean).join('/');
+return '└ ' + s.name + '(' + s.code + ')' + (tag ? '  [' + tag + ']' : '');
+}).join('\n');
+
+// 比喩（冒頭）をX本文に使用
+const _opening = ((currentArticleData.metaphors && currentArticleData.metaphors.opening) || '').replace(/\n/g, ' ');
+const _openingSnippet = _opening.length > 45 ? _opening.substring(0, 45) + '——' : _opening;
+
+// X投稿テキスト生成関数（noteURL差し替え可能）
+function _buildXContent(noteUrl) {
+const urlLine = noteUrl ? '\n' + noteUrl : '';
+return '📈【桶屋ストーリーAI】\n'
++ currentArticleData.title + '\n\n'
++ '━━━━━━━━━━━━━━━\n'
++ '実現確率' + prob + '%' + _phaseTag + '\n'
++ '━━━━━━━━━━━━━━━\n\n'
++ _openingSnippet + '\n\n'
++ 'あなたはこの連鎖、信じますか？\n\n'
++ '🎯 注目低位株\n'
++ _stockLines + '\n'
++ '\u3000...なぜこの' + _countStr + 'なのか、全文はnoteで↓'
++ urlLine + '\n\n'
++ '#株初心者 #日本株 #低位株 #桶屋理論';
+}
+const xContent = _buildXContent('');
 
 // note用：全文Markdown（織り込み判定を選出理由に含める）
 let note = '# ' + currentArticleData.title + '\n\n';
@@ -745,7 +786,7 @@ note += '### ' + s.name + '（' + s.code + '）\n' +
 '- **選出理由＆織り込み判定**: ' + s.reasoning + '\n\n';
 });
 note += '—\n\n';
-note += '💬 **あなたはこのシナリオ実現確率何%だと思いますか？** コメントで教えてください！\n\n';
+note += '💬 **あなたはこのシナリオ、何点だと思いますか？** コメントで教えてください！\n\n';
 note += '⚠️ *この記事はAIが生成した情報です。投資判断はご自身の責任でお願いします。株式投資にはリスクが伴います。過去の実績は将来の成果を保証するものではありません。*';
 
 document.getElementById('xOutput').value = xContent;
@@ -753,9 +794,19 @@ document.getElementById('noteOutput').value = note;
 document.getElementById('finalOutputCard').style.display = 'block';
 setStep(4);
 
-document.getElementById('openXBtn').onclick = () => {
-const encoded = encodeURIComponent(xContent);
-window.open('https://twitter.com/intent/tweet?text=' + encoded, '_blank');
+// noteURL入力時にX投稿テキストを自動更新
+const _noteUrlInput = document.getElementById('noteUrlInput');
+if (_noteUrlInput) {
+_noteUrlInput.value = '';
+_noteUrlInput.oninput = function() {
+const updated = _buildXContent(this.value.trim());
+document.getElementById('xOutput').value = updated;
+};
+}
+document.getElementById('openXBtn').onclick = function() {
+const noteUrl = (_noteUrlInput && _noteUrlInput.value.trim()) || '';
+const latest = _buildXContent(noteUrl);
+window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(latest), '_blank');
 };
 
 const pub = new Date().toISOString();
