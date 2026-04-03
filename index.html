@@ -17,9 +17,6 @@ body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'H
 .app-header { text-align: center; padding: 20px 0 16px; margin-bottom: 8px; }
 .app-header h1 { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -0.5px; }
 .app-header p { font-size: 13px; color: var(--slate); margin-top: 4px; }
-.header-nav { text-align: center; margin-bottom: 16px; }
-.header-nav a { display: inline-block; background: var(--navy-light); color: var(--navy); border: 1px solid var(--border); border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
-.header-nav a:active { background: #dce8f5; }
 .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #eef2f6; }
 .step-nav { display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 16px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid var(--border); overflow-x: auto; gap: 4px; }
 .step-dot { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 44px; }
@@ -68,11 +65,17 @@ textarea { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid #c
 .news-age-fresh { background: #dcfce7; color: #166534; }
 .news-age-old { background: #fef9c3; color: #854d0e; }
 .stock-card { background: #f8fafc; border-radius: 14px; padding: 14px; margin-top: 10px; border: 1px solid var(--border); font-size: 14px; }
+/* 織り込み判定パネル */
 .pricing-panel { background: linear-gradient(135deg, #eef2ff, #f0f4fa); border: 1px solid #c7d2fe; border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 13px; }
 .pricing-panel-title { font-weight: 700; font-size: 13px; color: var(--navy); margin-bottom: 6px; }
 .pricing-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 4px; line-height: 1.5; }
 .pricing-label { font-weight: 600; color: #4f46e5; min-width: 56px; font-size: 12px; }
 .stage-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; background: var(--navy); color: white; margin-top: 4px; }
+.tracker-item { background: white; border-radius: 14px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border); font-size: 14px; }
+.status-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.status-pending { background: #fef9c3; color: #854d0e; }
+.status-hit { background: #dcfce7; color: #166534; }
+.status-miss { background: #fee2e2; color: #991b1b; }
 .alert-banner { background: #fef3c7; border-left: 4px solid var(--amber); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 14px; }
 .history-item { background: #f8fafc; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 13px; border-left: 3px solid #cbd5e1; }
 .history-date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
@@ -103,10 +106,6 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   <p>因果関係の連鎖で読み解く低位株アナリスト</p>
 </div>
 
-<div class="header-nav">
-  <a href="tracker.html">📊 予測トラッカーを見る →</a>
-</div>
-
 <div class="step-nav">
   <div class="step-dot" id="sd1"><div class="step-circle active" id="sc1">1</div><div class="step-label active" id="sl1">生成</div></div>
   <div class="step-connector"></div>
@@ -115,6 +114,8 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   <div class="step-dot" id="sd3"><div class="step-circle" id="sc3">3</div><div class="step-label" id="sl3">校正</div></div>
   <div class="step-connector"></div>
   <div class="step-dot" id="sd4"><div class="step-circle" id="sc4">4</div><div class="step-label" id="sl4">公開</div></div>
+  <div class="step-connector"></div>
+  <div class="step-dot" id="sd5"><div class="step-circle" id="sc5">5</div><div class="step-label" id="sl5">検証</div></div>
 </div>
 
 <!-- 履歴（折りたたみ） -->
@@ -184,12 +185,42 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   </div>
 </div>
 
-<!-- STEP2 シナリオ選択 -->
+<!-- STEP2b シナリオ選択 -->
 
 <div class="card" id="scenarioCard" style="display:none;">
   <div class="label">🎭 STEP 2 — 3つの因果関係から記事を選ぶ</div>
   <div id="scenarioList" class="scenario-grid"></div>
   <div class="footer-note">使用済みシナリオは選択できません</div>
+</div>
+
+<!-- スコアリングカード（シナリオ選択後に表示） -->
+
+<div class="card" id="scoringCard" style="display:none;">
+  <div class="label">🎲 実現確率スコアリング</div>
+  <div style="font-size:13px;color:#64748b;margin-bottom:12px;">選んだ記事の実現確率を別AIに算出させます。スキップして株探しに進むこともできます。</div>
+
+  <div class="step-sub">使用するAIを選んでください</div>
+  <div class="ai-selector" id="aiSelectorScore">
+    <button class="ai-btn selected" data-ai="Gemini">Gemini</button>
+    <button class="ai-btn" data-ai="ChatGPT">ChatGPT</button>
+    <button class="ai-btn" data-ai="Claude">Claude</button>
+  </div>
+
+<button id="generateScoringPromptBtn" class="btn-primary" style="margin-bottom:12px;">📊 スコアリングプロンプトを生成</button>
+
+  <div id="scoringPromptArea" style="display:none;">
+    <div class="label" style="margin-top:0;">📋 AIにコピペするプロンプト</div>
+    <textarea id="scoringPromptOutput" rows="6" readonly></textarea>
+    <div class="flex-btns">
+      <button id="copyScoringPromptBtn" class="btn-secondary">📋 コピー</button>
+    </div>
+    <div class="label" style="margin-top:14px;">✍️ AIの出力を貼り付け</div>
+    <textarea id="scoringJsonInput" rows="5" placeholder='{"probability":55,"total_score":55,"scores":{...},"reasons":{...}}'></textarea>
+    <button id="applyScoringBtn" class="btn-primary" style="margin-top:10px;">✅ スコアを反映して株探しへ →</button>
+  </div>
+
+  <hr style="margin:16px 0;">
+  <button id="skipScoringBtn" class="btn-secondary" style="width:100%;">スキップして株探しへ →</button>
 </div>
 
 <!-- STEP3 プレビュー＆校正 -->
@@ -198,6 +229,8 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   <div class="label">📰 STEP 3 — 記事プレビュー</div>
   <div id="articlePreview"></div>
   <hr>
+
+  <!-- ファクト＋コンプライアンス統合チェック -->
 
   <div class="label">🔍 ファクト＆コンプライアンスチェック用プロンプト（別AIに貼り付け）</div>
   <div style="font-size:13px;color:#64748b;margin-bottom:8px;">ファクトチェックとコンプライアンス確認を1回のコピペで実施します</div>
@@ -213,6 +246,8 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   </div>
   <div id="diffDisplay" style="display:none;" class="alert-banner"></div>
   <div id="complianceDisplay" style="display:none;margin-top:8px;"></div>
+
+  <!-- 株リテイクセクション -->
 
   <hr>
   <div class="label">🔄 選出株のリテイク</div>
@@ -258,10 +293,6 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   <div class="flex-btns">
     <button id="copyNoteBtn" class="btn-secondary">📝 note全文をコピー</button>
   </div>
-
-  <div style="margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:14px;font-size:13px;color:#166534;">
-    📊 予測データを記録しました。<a href="tracker.html" style="color:#15803d;font-weight:700;">予測トラッカーで確認する →</a>
-  </div>
 </div>
 
 <!-- セルフチェック -->
@@ -271,9 +302,27 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
   <div id="selfCheckContent"></div>
 </div>
 
+<!-- STEP5 予測トラッカー -->
+
+<div class="card">
+  <div class="label">🎯 STEP 5 — 予測トラッカー</div>
+  <div id="alertArea"></div>
+  <div id="trackerList" style="font-size:14px;color:#64748b;">📊 まだ公開済み記事がありません</div>
+  <div class="flex-btns" style="margin-top:12px;">
+    <button id="batchCheckPromptBtn" class="btn-secondary">📊 全銘柄チェック用プロンプト</button>
+    <button id="toggleBatchBtn" class="btn-small">📋 判定結果を貼り付け</button>
+  </div>
+  <div id="batchResultArea" style="display:none;margin-top:12px;">
+    <div class="label">🤖 AI判定結果を貼り付け</div>
+    <textarea id="aiResultInput" rows="4" placeholder="銘柄: 企業名&#10;現在株価: ○○円&#10;判定: 的中"></textarea>
+    <button id="applyAiResultBtn" class="btn-secondary" style="margin-top:8px;">📋 判定を反映する</button>
+  </div>
+  <div class="footer-note">公開後1週間でアラート表示。AI判定結果をコピペで反映できます</div>
+</div>
+
 </div>
 <script>
-// ─── localStorage 安全ラッパー ────
+// ─── localStorage 安全ラッパー（使えない環境でもクラッシュしない）────
 const _store = (function() {
   const mem = {};
   try {
@@ -303,7 +352,7 @@ try { _store.set('oke_v10_used', JSON.stringify(usedScenarios)); } catch(e) {}
 function loadAllData() {
 try { predictions  = JSON.parse(_store.get('oke_v10_tracker') || '[]'); } catch(e) { predictions = []; }
 try { usedScenarios = JSON.parse(_store.get('oke_v10_used') || '[]'); } catch(e) { usedScenarios = []; }
-renderUsedHistory();
+renderTracker(); checkOneWeekAlerts(); renderUsedHistory();
 }
 
 let currentStep = 1;
@@ -314,11 +363,11 @@ _renderStepNav(n);
 }
 
 function _renderStepNav(activeStep) {
-for (let i = 1; i <= 4; i++) {
+for (let i = 1; i <= 5; i++) {
 const c = document.getElementById('sc' + i);
 const l = document.getElementById('sl' + i);
 const dot = document.getElementById('sd' + i);
-const reachable = i <= currentStep;
+const reachable = i <= currentStep && i !== 5;
 if (i < activeStep) { c.className = 'step-circle done'; l.className = 'step-label'; }
 else if (i === activeStep) { c.className = 'step-circle active'; l.className = 'step-label active'; }
 else { c.className = 'step-circle'; l.className = 'step-label'; }
@@ -331,9 +380,10 @@ dot.title = reachable ? 'STEP' + i + 'へ戻る' : '';
 
 function navigateToStep(n) {
 if (n > currentStep) return;
+if (n === 5) return;
 const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'block'; };
 const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-hide('step1Card'); hide('jsonCard'); hide('stockSearchCard'); hide('scenarioCard');
+hide('step1Card'); hide('jsonCard'); hide('stockSearchCard'); hide('scenarioCard'); hide('scoringCard');
 hide('previewCard'); hide('finalOutputCard'); hide('selfCheckPanel');
 if (n === 1) {
 show('step1Card'); show('jsonCard');
@@ -384,7 +434,13 @@ return '<div class="history-item"><strong>' + s.title.substring(0, 50) + (s.titl
 }).join('');
 }
 
-// ─── プロンプト生成 ───
+function checkOneWeekAlerts() {
+const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+const due = predictions.filter(p => p.status === 'pending' && new Date(p.publishDate) <= oneWeekAgo);
+document.getElementById('alertArea').innerHTML = due.map(p => '<div class="alert-banner">⏰ <strong>判定時期です！</strong> ' + p.company + ' (' + p.code + ') 公開から1週間以上経過</div>').join('');
+}
+
+// ─── ① プロンプト生成（ニュース選定ルール刷新 + ② 織り込み判定 + ③ ファクト＋コンプラ統合） ───
 function generatePrompt() {
 const usedTitles = usedScenarios.map(s => s.title).join('、');
 const avoidNote = usedScenarios.length > 0
@@ -475,7 +531,7 @@ document.getElementById('promptArea').style.display = 'block';
 setStep(1);
 }
 
-// ─── シナリオ表示 ───
+// ─── シナリオ表示 ───────────────────────────────
 function displayScenarios(data) {
 if (!data.scenarios || data.scenarios.length < 2) { alert('シナリオが2つ以上見つかりませんでした。AIに再度依頼してください。'); return false; }
 multipleScenarios = data.scenarios.map(s => ({ ...s, isUsed: isScenarioUsed(s.title, s.newsChain.map(n => n.headline).join(' → ')) }));
@@ -483,6 +539,7 @@ const allUsed = multipleScenarios.every(s => s.isUsed);
 const container = document.getElementById('scenarioList');
 if (allUsed) { container.innerHTML = '<div class="alert-banner" style="background:#fee2e2;border-left-color:#ef4444;">⚠️ 生成された3つのシナリオはすべて使用済みです。新しいプロンプトを生成してください。</div>'; return false; }
 container.innerHTML = multipleScenarios.map((s, idx) => {
+// ニュース連鎖：鮮度バッジ付き
 const chainHtml = s.newsChain.map(n => {
 const badge = n.freshness === 'fresh'
 ? '<span class="news-age-badge news-age-fresh">🟢 24h以内</span>'
@@ -521,9 +578,9 @@ probability: s.probability, probabilityReason: s.probabilityReason || ''
 };
 if (currentArticleData.stocks.length === 0) {
 document.getElementById('scenarioCard').style.display = 'none';
-document.getElementById('stockSearchCard').style.display = 'block';
+document.getElementById('scoringCard').style.display = 'block';
 setStep(2);
-window.scrollTo({ top: document.getElementById('stockSearchCard').offsetTop - 20, behavior: 'smooth' });
+window.scrollTo({ top: document.getElementById('scoringCard').offsetTop - 20, behavior: 'smooth' });
 return;
 }
 displayPreview(currentArticleData);
@@ -534,10 +591,12 @@ setStep(3);
 window.scrollTo({ top: document.getElementById('previewCard').offsetTop - 20, behavior: 'smooth' });
 }
 
-// ─── プレビュー表示 ───
+// ─── プレビュー表示（鮮度バッジ＋織り込み判定パネル対応） ───
 function displayPreview(data) {
 const openingMeta = (data.metaphors && data.metaphors.opening) || data.metaphor || '';
 const middleMeta = (data.metaphors && data.metaphors.middle) || '';
+
+// ニュース連鎖：鮮度バッジ付き
 const newsHtml = (data.newsChain || []).map(n => {
 const freshClass = n.freshness === 'fresh' ? 'news-fresh' : (n.freshness === 'background' ? 'news-old' : '');
 const freshBadge = n.freshness === 'fresh'
@@ -548,7 +607,10 @@ return '<div class="news-item ' + freshClass + '"><strong>📌 ' + n.headline + 
 '<br>' + n.detail +
 (n.source ? '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">📰 ' + n.source + '</div>' : '') + '</div>';
 }).join('');
+
+// 注目銘柄：織り込み判定をパネルとして表示
 const stocksHtml = (data.stocks || []).map(s => {
+// reasoningから織り込み判定キーワードを検出してハイライト
 const reasoning = s.reasoning || '';
 const stageMatch = reasoning.match(/初動|中盤|終盤/);
 const stageBadge = stageMatch ? '<span class="stage-badge">📍 ' + stageMatch[0] + 'フェーズ</span>' : '';
@@ -569,7 +631,10 @@ return '<div class="stock-card">' +
 }).join('');
 
 document.getElementById('articlePreview').innerHTML =
-(data.probability ? '<div style="background:var(--green);color:white;padding:5px 14px;border-radius:30px;display:inline-block;margin-bottom:12px;font-size:13px;font-weight:700;">🎲 実現確率 ' + data.probability + '%' + (data.probabilityReason ? '｜' + data.probabilityReason : '') + '</div>' : '') +
+(data.probability ? '<div style="margin-bottom:12px;">' +
+'<div style="background:var(--green);color:white;padding:5px 14px;border-radius:30px;display:inline-block;font-size:13px;font-weight:700;">🎲 実現確率 ' + data.probability + '%</div>' +
+(data.scoringDetail ? _buildScoringPanel(data.scoringDetail) : '') +
+'</div>' : '') +
 '<div class="metaphor-badge">✨ 冒頭の比喩</div>' +
 '<div class="story-highlight">' + openingMeta.replace(/\n/g, '<br>') + '</div>' +
 (middleMeta ? '<div class="metaphor-badge" style="margin-top:8px;">💡 中盤の比喩</div><div class="story-highlight">' + middleMeta + '</div>' : '') +
@@ -578,7 +643,7 @@ document.getElementById('articlePreview').innerHTML =
 '<div><strong style="font-size:14px;">🎯 注目の低位株（1000円未満）</strong>' + stocksHtml + '</div>';
 }
 
-// ─── JSON正規化 ───
+// ─── JSON正規化 ───────────────────────────────────
 function normalizeJSON(text) {
 let t = text
 .replace(/[\u3000\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ')
@@ -626,53 +691,69 @@ displayScenarios({ scenarios: multipleScenarios });
 } else { alert('JSONに scenarios フィールド（2件以上）が必要です。'); }
 }
 
-// ─── 校正反映 ───
+// ─── ③ 校正＋コンプライアンス統合反映 ───────────────
 function applyRevised() {
 const txt = normalizeJSON(document.getElementById('revisedJsonInput').value);
 if (!txt) return alert('AIの出力を貼り付けてください');
 try {
 const obj = JSON.parse(txt);
+
+// revisedFields方式（新）: 変更箇所だけ上書き
 if (obj.revisedFields !== undefined) {
-const f = obj.revisedFields;
-if (f.stocks && f.stocks.length > 0) currentArticleData.stocks = f.stocks;
-if (f.causalStory) currentArticleData.causalStory = f.causalStory;
-if (f.title) currentArticleData.title = f.title;
-if (f.newsChain) currentArticleData.newsChain = f.newsChain;
-} else if (obj.revisedArticle) {
-currentArticleData = obj.revisedArticle;
-} else if (obj.stocks) {
-currentArticleData = obj;
-} else {
-throw new Error('JSONの形式が正しくありません。');
+  const f = obj.revisedFields;
+  if (f.stocks && f.stocks.length > 0) currentArticleData.stocks = f.stocks;
+  if (f.causalStory) currentArticleData.causalStory = f.causalStory;
+  if (f.title) currentArticleData.title = f.title;
+  if (f.newsChain) currentArticleData.newsChain = f.newsChain;
 }
+// revisedArticle方式（旧・後方互換）
+else if (obj.revisedArticle) {
+  currentArticleData = obj.revisedArticle;
+}
+// stocks直接方式（後方互換）
+else if (obj.stocks) {
+  currentArticleData = obj;
+} else {
+  throw new Error('JSONの形式が正しくありません。\n\nAIへの指示：\n{"revisedFields": {}, "changes": "修正なし", "complianceResult": "OK: ..."} の形式で出力してください');
+}
+
 displayPreview(currentArticleData);
+
 document.getElementById('diffDisplay').style.display = 'block';
 document.getElementById('diffDisplay').innerHTML = '✍️ ' + (obj.changes || '修正が反映されました');
+
 const compResult = obj.complianceResult || '';
 const compDisplay = document.getElementById('complianceDisplay');
 if (compResult) {
-compDisplay.style.display = 'block';
-if (compResult.startsWith('OK') || compResult.includes('問題は見つかりません')) {
-compDisplay.innerHTML = '<div class="compliance-ok">✅ コンプライアンス: ' + compResult + '</div>';
-} else {
-compDisplay.innerHTML = '<div class="compliance-ng">⚠️ コンプライアンス: ' + compResult.replace(/\n/g, '<br>') + '</div>';
+  compDisplay.style.display = 'block';
+  if (compResult.startsWith('OK') || compResult.includes('問題は見つかりません')) {
+    compDisplay.innerHTML = '<div class="compliance-ok">✅ コンプライアンス: ' + compResult + '</div>';
+  } else {
+    compDisplay.innerHTML = '<div class="compliance-ng">⚠️ コンプライアンス: ' + compResult.replace(/\n/g, '<br>') + '</div>';
+  }
 }
-}
+
 } catch(e) { alert('JSONの読み込み失敗:\n' + e.message); }
 }
 
-// ─── 公開承認 ───
+// ─── 公開承認 ─────────────────────────────────────
 function approveFinal() {
 if (!currentArticleData) return alert('記事がありません');
 markScenarioAsUsed(currentArticleData);
 const stocks = currentArticleData.stocks;
+const stocksLine = stocks.map(s => s.name + '(' + s.code + ')').join(' / ');
 const prob = currentArticleData.probability || '?';
 const openingMeta = (currentArticleData.metaphors && currentArticleData.metaphors.opening) || currentArticleData.metaphor || '';
+
+// X用：要約版
 const storySnippet = currentArticleData.causalStory.replace(/\n/g, ' ').substring(0, 55);
+// フェーズ・織り込み抽出
 const _fr = (stocks[0] && stocks[0].reasoning) || '';
 const _ph = _fr.match(/初動|中盤|終盤/);
 const _phaseStr = _ph ? _ph[0] + 'フェーズと読む' : '';
 const _phaseTag = _phaseStr ? '｜' + _phaseStr : '';
+
+// 銘柄リスト（数に応じて動的生成）
 const _countLabels = ['1社','2社','3社','4社','5社'];
 const _countStr = _countLabels[stocks.length - 1] || stocks.length + '社';
 const _stockLines = stocks.map(function(s) {
@@ -682,9 +763,12 @@ const pr = r.match(/未織り込み|織り込み済み/);
 const tag = [ph ? ph[0] : '', pr ? pr[0] : ''].filter(Boolean).join('/');
 return '└ ' + s.name + '(' + s.code + ')' + (tag ? '  [' + tag + ']' : '');
 }).join('\n');
+
+// 比喩（冒頭）をX本文に使用
 const _opening = ((currentArticleData.metaphors && currentArticleData.metaphors.opening) || '').replace(/\n/g, ' ');
 const _openingSnippet = _opening.length > 45 ? _opening.substring(0, 45) + '——' : _opening;
 
+// X投稿テキスト生成関数（noteURL差し替え可能）
 function _buildXContent(noteUrl) {
 const urlLine = noteUrl ? '\n' + noteUrl : '';
 return '📈【桶屋ストーリーAI】\n'
@@ -702,6 +786,7 @@ return '📈【桶屋ストーリーAI】\n'
 }
 const xContent = _buildXContent('');
 
+// note用：全文Markdown（織り込み判定を選出理由に含める）
 let note = '# ' + currentArticleData.title + '\n\n';
 note += '> 🎲 **実現確率: ' + prob + '%**' + (currentArticleData.probabilityReason ? '｜' + currentArticleData.probabilityReason : '') + '\n\n';
 note += '—\n\n';
@@ -719,7 +804,7 @@ n.detail + '\n' +
 if (currentArticleData.metaphors && currentArticleData.metaphors.middle) {
 note += '—\n\n> ' + currentArticleData.metaphors.middle + '\n\n—\n\n';
 }
-note += '## 📖 因果関係のストーリー\n\n' + currentArticleData.causalStory + '\n\n📌 **あなたはこのシナリオ実現確率何%だと思う？コメントで教えてください！**\n\n';
+note += '## 📖 因果関係のストーリー\n\n' + currentArticleData.causalStory + '\n\n📌 **あなたはこのシナリオ、何点だと思う？コメントで教えてください！**\n\n';
 note += '## 🎯 注目の低位株（株価1000円未満）\n\n';
 note += '> ※低位株とは株価1000円未満の銘柄。少額から投資しやすく、上昇時の％インパクトが大きい特徴があります。\n\n';
 stocks.forEach(s => {
@@ -732,7 +817,7 @@ note += '### ' + s.name + '（' + s.code + '）\n' +
 '- **選出理由＆織り込み判定**: ' + s.reasoning + '\n\n';
 });
 note += '—\n\n';
-note += '💬 **あなたはこのシナリオ実現確率何%だと思いますか？** コメントで教えてください！\n\n';
+note += '💬 **あなたはこのシナリオ、何点だと思いますか？** コメントで教えてください！\n\n';
 note += '⚠️ *この記事はAIが生成した情報です。投資判断はご自身の責任でお願いします。株式投資にはリスクが伴います。過去の実績は将来の成果を保証するものではありません。*';
 
 document.getElementById('xOutput').value = xContent;
@@ -740,6 +825,7 @@ document.getElementById('noteOutput').value = note;
 document.getElementById('finalOutputCard').style.display = 'block';
 setStep(4);
 
+// noteURL入力時にX投稿テキストを自動更新
 const _noteUrlInput = document.getElementById('noteUrlInput');
 if (_noteUrlInput) {
 _noteUrlInput.value = '';
@@ -757,24 +843,15 @@ window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(latest
 const pub = new Date().toISOString();
 stocks.forEach(s => {
 if (!predictions.find(p => p.code === s.code && p.publishDate.split('T')[0] === pub.split('T')[0])) {
-predictions.push({
-id: Date.now() + Math.random(),
-company: s.name,
-code: s.code,
-priceAtPrediction: s.currentPrice,
-direction: s.prediction,
-publishDate: pub,
-articleTitle: currentArticleData.title,
-checks: { d3: null, w1: null, m1: null }
-});
+predictions.push({ id: Date.now() + Math.random(), company: s.name, code: s.code, priceAtPrediction: s.currentPrice, direction: s.prediction, publishDate: pub, status: 'pending' });
 }
 });
-saveAllData();
+saveAllData(); renderTracker();
 generateSelfCheckPrompt(currentArticleData, xContent);
 window.scrollTo({ top: document.getElementById('finalOutputCard').offsetTop - 20, behavior: 'smooth' });
 }
 
-// ─── セルフチェック ───
+// ─── セルフチェック ───────────────────────────────
 function generateSelfCheckPrompt(articleData, xText) {
 const panel = document.getElementById('selfCheckPanel');
 const content = document.getElementById('selfCheckContent');
@@ -796,32 +873,121 @@ saved.style.display = 'block';
 saved.innerHTML = result.replace(/\n/g, '<br>');
 };
 
-// ─── ファクト＆コンプラプロンプト生成 ───
-function _buildFactCheckPrompt() {
-if (!currentArticleData) return;
-const st = (currentArticleData.stocks || []).map(function(s) {
-return s.name + '(' + s.code + ') ' + s.currentPrice + '円 / ' + s.prediction;
-}).join(', ');
-const nw = (currentArticleData.newsChain || []).map(function(n, i) {
-return (i+1) + '. [' + (n.freshness === 'fresh' ? '24h以内' : '3-7日前') + '] ' + n.headline;
-}).join('\n');
-const body = (currentArticleData.causalStory || '');
-document.getElementById('factCheckPrompt').value =
-'【ファクト＆コンプライアンス統合チェック依頼】\n' +
-'【タイトル】' + currentArticleData.title + '\n\n' +
-'【注目銘柄】\n' + st + '\n\n' +
-'【ニュース連鎖】\n' + nw + '\n\n' +
-'【ストーリー全文】\n' + body + '\n\n' +
-'===ファクトチェック===\n' +
-'各銘柄をYahooファイナンス(finance.yahoo.co.jp)で確認。1000円未満か、証券コード正しいか。\n\n' +
-'===コンプライアンス(SNS個人発信・緩め)===\n' +
-'断定的推奨表現・風説の流布がないか確認。\n\n' +
-'===出力形式(JSONのみ)===\n' +
-'修正あり: {"revisedFields":{"stocks":[...],"causalStory":"..."},"changes":"...","complianceResult":"OK/NG"}\n' +
-'修正なし: {"revisedFields":{},"changes":"修正なし","complianceResult":"OK: 問題なし"}';
+// ─── トラッカー ──────────────────────────────────
+function renderTracker() {
+const el = document.getElementById('trackerList');
+if (!predictions.length) { el.innerHTML = '<span style="color:#64748b;font-size:14px;">📊 まだ公開済み記事がありません</span>'; return; }
+const hit = predictions.filter(p => p.status === 'hit').length;
+const miss = predictions.filter(p => p.status === 'miss').length;
+const pending = predictions.filter(p => p.status === 'pending').length;
+el.innerHTML = '<div class="summary-box">🎯 的中 <strong>' + hit + '</strong>/' + predictions.length + ' ｜ はずれ ' + miss + ' ｜ 判定待ち ' + pending + '</div>' +
+predictions.map(p => '<div class="tracker-item"><div style="display:flex;justify-content:space-between;align-items:center;"><strong>' + p.company + ' (' + p.code + ')</strong><span class="status-badge ' + (p.status === 'hit' ? 'status-hit' : p.status === 'miss' ? 'status-miss' : 'status-pending') + '">' + (p.status === 'hit' ? '的中' : p.status === 'miss' ? 'はずれ' : '判定待ち') + '</span></div><div style="font-size:13px;margin-top:4px;">予想: ' + (p.direction === 'up' ? '上昇' : '下落') + ' ／ 公開時: ' + p.priceAtPrediction + '円</div><button class="btn-small" style="margin-top:8px;" onclick="showSingleCheckPrompt(\'' + p.company + '\',\'' + p.code + '\',' + p.priceAtPrediction + ',\'' + p.direction + '\')">🔍 チェック用プロンプト</button></div>').join('');
 }
 
-// ─── STEP1-B 株探しプロンプト生成 ───
+function showModal(text, title) {
+const m = document.createElement('div');
+m.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;';
+m.innerHTML = '<div style="background:white;border-radius:24px;max-width:500px;width:100%;padding:20px;"><h3 style="margin-bottom:12px;font-size:16px;">' + title + '</h3><textarea readonly style="width:100%;height:180px;padding:12px;border-radius:14px;border:1px solid #e2e8f0;font-family:monospace;font-size:13px;">' + text + '</textarea><div style="display:flex;gap:10px;margin-top:12px;"><button id="modalCopyBtn" style="flex:1;background:#1e3c72;color:white;border:none;border-radius:30px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">📋 コピー</button><button onclick="this.closest(\'div\').parentElement.remove()" style="background:#f1f5f9;color:#1e3c72;border:1px solid #cbd5e1;border-radius:30px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;">閉じる</button></div></div>';
+document.body.appendChild(m);
+document.getElementById('modalCopyBtn').onclick = async () => {
+try { await navigator.clipboard.writeText(text); alert('コピーしました'); }
+catch { alert('コピーに失敗しました。テキストを手動で選択してください。'); }
+};
+}
+
+window.showSingleCheckPrompt = function(company, code, price, direction) {
+showModal('【株価チェック】\n銘柄: ' + company + ' (' + code + ')\n公開時株価: ' + price + '円\n予想: ' + (direction === 'up' ? '上昇' : '下落') + '\n\nYahooファイナンス（finance.yahoo.co.jp）で現在株価を調べ、以下形式で出力：\n銘柄: ' + company + ' (' + code + ')\n現在株価: ○○円\n判定: 【的中】 または 【はずれ】', company + ' チェック用プロンプト');
+};
+
+function generateBatchCheckPrompt() {
+const pending = predictions.filter(p => p.status === 'pending');
+if (!pending.length) return alert('判定待ちの銘柄はありません');
+let txt = '【一括株価チェック依頼】\n以下の銘柄の現在株価をYahooファイナンス（finance.yahoo.co.jp）で調べてください：\n\n';
+pending.forEach(p => { txt += '・' + p.company + ' (' + p.code + ') 公開時' + p.priceAtPrediction + '円 / 予想:' + (p.direction === 'up' ? '上昇' : '下落') + '\n'; });
+txt += '\n【出力形式】\n銘柄: 企業名\n現在株価: ○○円\n判定: 【的中】または【はずれ】\n\n各銘柄ごとに改行区切りで出力してください。';
+showModal(txt, '全銘柄チェック用プロンプト');
+}
+
+function parseAndApplyBatch(text) {
+const lines = text.split('\n'); let count = 0;
+const cp = /(?:銘柄|企業名)[:：]\s*([^（\n]+)/;
+const rp = /判定[:：]\s*[【〔]?(的中|はずれ|当たり|外れ)[】〕]?/;
+let block = '';
+for (let i = 0; i <= lines.length; i++) {
+const l = lines[i] || ''; block += l + '\n';
+if ((l.includes('銘柄') || l.includes('企業名') || i === lines.length) && block.trim()) {
+const cm = block.match(cp); const rm = block.match(rp);
+if (cm && rm) {
+const name = cm[1].trim();
+const status = (rm[1] === '的中' || rm[1] === '当たり') ? 'hit' : 'miss';
+const t = predictions.find(p => p.company.includes(name) && p.status === 'pending');
+if (t) { t.status = status; t.lastCheckDate = new Date().toISOString(); count++; }
+}
+block = '';
+}
+}
+if (count > 0) { saveAllData(); renderTracker(); checkOneWeekAlerts(); }
+return count;
+}
+
+async function copyText(id) {
+const text = document.getElementById(id).value;
+try { await navigator.clipboard.writeText(text); alert('コピーしました'); }
+catch { const el = document.getElementById(id); el.select(); document.execCommand('copy'); alert('コピーしました'); }
+}
+
+// ─── イベント登録 ────────────────────────────────
+document.getElementById('generateArticleBtn').onclick = generatePrompt;
+document.getElementById('copyPromptBtn').onclick = () => copyText('promptOutput');
+document.getElementById('applyArticleBtn').onclick = () => loadArticleFromJson(document.getElementById('jsonInput').value);
+document.getElementById('copyFactCheckBtn').onclick = () => copyText('factCheckPrompt');
+document.getElementById('applyRevisedBtn').onclick = applyRevised;
+document.getElementById('approveFinalBtn').onclick = approveFinal;
+document.getElementById('copyXBtn').onclick = () => copyText('xOutput');
+document.getElementById('copyNoteBtn').onclick = () => copyText('noteOutput');
+document.getElementById('batchCheckPromptBtn').onclick = generateBatchCheckPrompt;
+document.getElementById('applyAiResultBtn').onclick = () => {
+const count = parseAndApplyBatch(document.getElementById('aiResultInput').value);
+alert(count + '件の判定を反映しました');
+document.getElementById('aiResultInput').value = '';
+document.getElementById('batchResultArea').style.display = 'none';
+};
+document.getElementById('clearHistoryBtn').onclick = () => {
+if (confirm('使用履歴をすべて削除しますか？')) { usedScenarios = []; saveAllData(); renderUsedHistory(); }
+};
+document.getElementById('toggleBatchBtn').onclick = () => {
+const a = document.getElementById('batchResultArea');
+a.style.display = a.style.display === 'none' ? 'block' : 'none';
+};
+document.getElementById('historyToggle').onclick = function() {
+const body = document.getElementById('historyBody');
+const isOpen = body.style.display !== 'none';
+body.style.display = isOpen ? 'none' : 'block';
+this.classList.toggle('open', !isOpen);
+};
+
+// ─── AIセレクター ────────────────────────────────────
+let selectedAI_A = 'Gemini';
+let selectedAI_B = 'Gemini';
+
+function initAiSelectors() {
+document.querySelectorAll('#aiSelectorA .ai-btn').forEach(btn => {
+btn.onclick = () => {
+document.querySelectorAll('#aiSelectorA .ai-btn').forEach(b => b.classList.remove('selected'));
+btn.classList.add('selected');
+selectedAI_A = btn.dataset.ai;
+};
+});
+document.querySelectorAll('#aiSelectorB .ai-btn').forEach(btn => {
+btn.onclick = () => {
+document.querySelectorAll('#aiSelectorB .ai-btn').forEach(b => b.classList.remove('selected'));
+btn.classList.add('selected');
+selectedAI_B = btn.dataset.ai;
+};
+});
+}
+
+// ─── STEP1-B 株探しプロンプト生成 ────────────────────
 function generateStockPrompt() {
 if (!currentArticleData) { alert('先にシナリオを選択してください'); return; }
 const story = (currentArticleData.causalStory || '').replace(/`/g, "'");
@@ -860,11 +1026,37 @@ story,
 '  ]',
 '}'
 ];
-document.getElementById('stockPromptOutput').value = lines.join('\n');
+const prompt = lines.join('\n');
+document.getElementById('stockPromptOutput').value = prompt;
 document.getElementById('stockPromptArea').style.display = 'block';
 }
 
-// ─── 銘柄マージ → STEP3へ ───
+// ─── STEP1-B 銘柄マージ → STEP2へ ───────────────────
+// ─── ファクト＆コンプラプロンプト生成 ────────────────────
+function _buildFactCheckPrompt() {
+if (!currentArticleData) return;
+const st = (currentArticleData.stocks || []).map(function(s) {
+return s.name + '(' + s.code + ') ' + s.currentPrice + '円 / ' + s.prediction;
+}).join(', ');
+const nw = (currentArticleData.newsChain || []).map(function(n, i) {
+return (i+1) + '. [' + (n.freshness === 'fresh' ? '24h以内' : '3-7日前') + '] ' + n.headline;
+}).join('\n');
+const body = (currentArticleData.causalStory || '');
+document.getElementById('factCheckPrompt').value =
+'【ファクト＆コンプライアンス統合チェック依頼】\n' +
+'【タイトル】' + currentArticleData.title + '\n\n' +
+'【注目銘柄】\n' + st + '\n\n' +
+'【ニュース連鎖】\n' + nw + '\n\n' +
+'【ストーリー全文】\n' + body + '\n\n' +
+'===ファクトチェック===\n' +
+'各銘柄をYahooファイナンス(finance.yahoo.co.jp)で確認。1000円未満か、証券コード正しいか。\n\n' +
+'===コンプライアンス(SNS個人発信・緩め)===\n' +
+'断定的推奨表現・風説の流布がないか確認。\n\n' +
+'===出力形式(JSONのみ)===\n' +
+'修正あり: {"revisedFields":{"stocks":[...],"causalStory":"..."},"changes":"...","complianceResult":"OK/NG"}\n' +
+'修正なし: {"revisedFields":{},"changes":"修正なし","complianceResult":"OK: 問題なし"}';
+}
+
 function applyStockAndMerge() {
 const txt = normalizeJSON(document.getElementById('stockJsonInput').value);
 if (!txt) return alert('銘柄JSONを貼り付けてください');
@@ -872,22 +1064,197 @@ try {
 const obj = JSON.parse(txt);
 const stocks = obj.stocks || (Array.isArray(obj) ? obj : null);
 if (!stocks || stocks.length === 0) throw new Error('"stocks" 配列が見つかりません');
+
+// シナリオ全件にマージ
 multipleScenarios = multipleScenarios.map(s => ({ ...s, stocks: stocks }));
+// 現在選択中のシナリオにもマージ
 if (currentArticleData) currentArticleData.stocks = stocks;
+
+// 現在選択中の記事にもマージして即STEP3プレビューへ
 document.getElementById('stockSearchCard').style.display = 'none';
 if (currentArticleData) {
-currentArticleData.stocks = stocks;
-displayPreview(currentArticleData);
-_buildFactCheckPrompt();
-document.getElementById('previewCard').style.display = 'block';
-setStep(3);
-window.scrollTo({ top: document.getElementById('previewCard').offsetTop - 20, behavior: 'smooth' });
+  currentArticleData.stocks = stocks;
+  displayPreview(currentArticleData);
+  // ファクト・コンプラプロンプト生成
+  _buildFactCheckPrompt();
+  document.getElementById('previewCard').style.display = 'block';
+  setStep(3);
+  window.scrollTo({ top: document.getElementById('previewCard').offsetTop - 20, behavior: 'smooth' });
 }
+
 } catch(e) { alert('銘柄JSONの読み込み失敗:\n' + e.message); }
 }
 
-// ─── 株リテイク ───
-let retakeMode = '';
+// ─── ステップナビ クリックで戻る ────────────────────
+[1,2,3,4].forEach(n => {
+const dot = document.getElementById('sd' + n);
+if (dot) dot.addEventListener('click', () => navigateToStep(n));
+});
+
+// ─── スコアリング詳細パネル生成 ───────────────────────────────
+function *buildScoringPanel(detail) {
+if (!detail || !detail.scores) return '';
+const s = detail.scores;
+const r = detail.reasons || {};
+const labels = [
+['theme',    'テーマ強さ'],
+['impact',   'ニュースインパクト'],
+['logic',    '因果関係'],
+['momentum', '市場初動'],
+['spread',   '波及余地']
+];
+const rows = labels.map(function(pair) {
+const key = pair[0], label = pair[1];
+const score = s[key] !== undefined ? s[key] : '-';
+const reason = r[key] || '';
+const pct = score !== '-' ? Math.round(score / 20 * 100) : 0;
+const color = pct >= 75 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+return '<div style="margin-bottom:8px;">' +
+'<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:3px;">' +
+'<span>' + label + '</span><span style="color:' + color + ';">' + score + '点</span></div>' +
+'<div style="background:#e2e8f0;border-radius:4px;height:4px;margin-bottom:3px;">' +
+'<div style="background:' + color + ';width:' + pct + '%;height:4px;border-radius:4px;"></div></div>' +
+(reason ? '<div style="font-size:11px;color:#64748b;">→ ' + reason + '</div>' : '') +
+'</div>';
+}).join('');
+const panelId = 'scoringPanel*' + Date.now();
+return '<div style="margin-top:8px;">' +
+'<div onclick="var b=document.getElementById('' + panelId + '');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.si').textContent=b.style.display==='none'?'▼':'▲'" ' +
+'style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;' +
+'background:#f1f5f9;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;color:#334155;">' +
+'<span>📊 スコア詳細（合計' + (detail.total_score || '-') + '点）</span>' +
+'<span class="si">▼</span></div>' +
+'<div id="' + panelId + '" style="display:none;background:#f8fafc;border-radius:0 0 10px 10px;padding:12px;border:1px solid #e2e8f0;border-top:none;">' +
+rows + '</div></div>';
+}
+
+// ─── スコアリング機能 ─────────────────────────────────────────
+function generateScoringPrompt() {
+if (!currentArticleData) { alert('先にシナリオを選択してください'); return; }
+
+const title = currentArticleData.title;
+const chain = (currentArticleData.newsChain || []).map(function(n) {
+return n.headline;
+}).join(' → ');
+const storySummary = (currentArticleData.causalStory || '').replace(/\n/g, ' ').substring(0, 300) + '...';
+
+const prompt = [
+'あなたは「桶屋理論」に基づいて株価シナリオの実現確率を算出するアナリストです。',
+'',
+'以下の記事データをもとに、5項目をそれぞれ0〜20点で評価し、合計点から実現確率（%）を算出してください。',
+'各項目には必ず「1行の理由」を付けてください。',
+'',
+'【記事データ】',
+'タイトル：' + title,
+'因果関係：' + chain,
+'ストーリー要約：' + storySummary,
+'',
+'【評価項目と基準】',
+'',
+'① テーマの強さ（0〜20）',
+'・テーマの社会的・経済的規模で評価する',
+'・長期トレンド（AI・半導体・脱炭素など）は高評価',
+'・影響範囲が広いほど高得点',
+'※現在の市場認知度は⑤で評価するため、ここでは考慮しない',
+'',
+'② ニュースインパクト（0〜20）',
+'・ニュースの「影響力」で評価する（時間の新しさではない）',
+'・大手企業（GAFAM等）や国家レベルは高得点',
+'・必ずウェブ検索で報道状況を確認した上で採点すること',
+'・影響範囲が限定的な場合は低得点',
+'',
+'③ 因果関係の明確さ（0〜20）',
+'・初心者でも直感的に理解できるか',
+'・論理に飛躍がなく自然につながっているか',
+'・「A→B→C」の流れが明確か',
+'・現実のビジネス構造として成立しているかを重視すること',
+'',
+'④ 市場の初動（0〜20）',
+'・関連銘柄の出来高増加、株価上昇率、ランキング掲載有無などを総合的に判断すること',
+'・必ずウェブ検索で関連銘柄の直近値動きを確認した上で採点すること',
+'・すでに資金流入の兆しがあるか',
+'・全く反応がない場合は低得点',
+'',
+'⑤ 波及余地（0〜20）',
+'・現時点での市場認知度・織り込み度合いで評価する',
+'・まだ市場に広く認識されていないほど高得点',
+'・すでに織り込み済みの場合は低得点',
+'',
+'【スコアルール】',
+'・各項目は「5点刻み（5/10/15/20）」を基本とし、必要に応じて微調整すること',
+'・合計点 ÷ 100 ＝ 実現確率（%）とする',
+'・点数は必ずバラつきを持たせ、不自然に全て高得点にしないこと',
+'・理由は具体的かつ簡潔に1行で書くこと',
+'・過去の類似テーマと比較して過大評価になっていないか確認すること',
+'・①テーマの強さと⑤波及余地は必ず分離して評価すること（①は規模、⑤は織り込み度）',
+'',
+'【出力形式】必ずテキストとJSONの両方を出力すること',
+'',
+'＜テキスト＞',
+'🎲 実現確率：◯◯%（合計◯◯点）',
+'',
+'・テーマ強さ：◯◯点',
+'→ 理由：',
+'',
+'・ニュースインパクト：◯◯点',
+'→ 理由：',
+'',
+'・因果関係：◯◯点',
+'→ 理由：',
+'',
+'・市場初動：◯◯点',
+'→ 理由：',
+'',
+'・波及余地：◯◯点',
+'→ 理由：',
+'',
+'＜JSON＞',
+'{"probability":XX,"total_score":XX,"scores":{"theme":XX,"impact":XX,"logic":XX,"momentum":XX,"spread":XX},"reasons":{"theme":"...","impact":"...","logic":"...","momentum":"...","spread":"..."}}',
+'',
+'※JSONの数値は必ずテキスト出力と一致させること'
+].join('\n');
+
+document.getElementById('scoringPromptOutput').value = prompt;
+document.getElementById('scoringPromptArea').style.display = 'block';
+}
+
+function applyScoring() {
+const txt = normalizeJSON(document.getElementById('scoringJsonInput').value);
+if (!txt) return alert('AIの出力を貼り付けてください');
+try {
+const obj = JSON.parse(txt);
+if (obj.probability === undefined) throw new Error('"probability" が見つかりません');
+
+// スコア検証（total_scoreとscoresの合計が一致するか）
+const scores = obj.scores || {};
+const calcTotal = (scores.theme||0) + (scores.impact||0) + (scores.logic||0) + (scores.momentum||0) + (scores.spread||0);
+const declaredTotal = obj.total_score || calcTotal;
+
+// currentArticleDataに反映
+currentArticleData.probability = obj.probability;
+currentArticleData.probabilityReason = obj.total_score + '点｜' +
+  'テーマ' + (scores.theme||'-') + '点・' +
+  'インパクト' + (scores.impact||'-') + '点・' +
+  '因果' + (scores.logic||'-') + '点・' +
+  '初動' + (scores.momentum||'-') + '点・' +
+  '波及' + (scores.spread||'-') + '点';
+currentArticleData.scoringDetail = obj;
+
+// スコアリングカードを閉じて株探しへ
+document.getElementById('scoringCard').style.display = 'none';
+_goToStockSearch();
+
+} catch(e) { alert('スコアJSONの読み込み失敗:\n' + e.message); }
+}
+
+function _goToStockSearch() {
+document.getElementById('stockSearchCard').style.display = 'block';
+setStep(2);
+window.scrollTo({ top: document.getElementById('stockSearchCard').offsetTop - 20, behavior: 'smooth' });
+}
+
+// ─── 株リテイク機能 ───────────────────────────────────────────
+let retakeMode = ''; // 'all' or 'info'
 
 function showRetakeArea(mode) {
 retakeMode = mode;
@@ -897,9 +1264,18 @@ const output = document.getElementById('retakePromptOutput');
 const input = document.getElementById('retakeJsonInput');
 area.style.display = 'block';
 input.value = '';
+
+const isUS = document.title.includes('US');
+
 if (mode === 'all') {
+// 株丸ごと入れ替え → 株探しプロンプトを再生成
 label.textContent = '📋 株探しプロンプト（AIにコピペ）';
 const story = (currentArticleData.causalStory || '').replace(/`/g, "'");
+const priceCheck = isUS
+? 'Yahoo Finance(finance.yahoo.com)で確認。$10未満のNYSE/NASDAQ銘柄のみ。'
+: 'Yahooファイナンス(finance.yahoo.co.jp)で確認。1000円未満の東証銘柄のみ。';
+const codeLabel = isUS ? 'ティッカーシンボル' : '証券コード';
+const priceUnit = isUS ? '株価（ドル、数値のみ）' : '株価（円、数値のみ）';
 const lines = [
 '【株入れ替えリテイク】',
 '以下の記事ストーリーのテーマに合う注目銘柄を1〜2社探してください。',
@@ -912,19 +1288,24 @@ currentArticleData.title,
 story,
 '',
 '【ルール】',
-'・Yahooファイナンス(finance.yahoo.co.jp)で確認。1000円未満の東証銘柄のみ。',
+'・' + priceCheck,
 '・記憶の株価は使用禁止',
 '・織り込み判定（価格反応・時間軸・市場の広がり・初動/中盤/終盤）をreasoningに含める',
 '',
 '【出力形式】JSONのみ',
-'{"stocks":[{"name":"企業名","code":"証券コード","currentPrice":株価,"prediction":"up","reasoning":"選出理由と織り込み判定"}]}'
+'{"stocks":[{"name":"企業名","code":"' + codeLabel + '","currentPrice":' + priceUnit + ',"prediction":"up","reasoning":"選出理由と織り込み判定"}]}'
 ];
 output.value = lines.join('\n');
+
 } else {
+// 個別情報修正 → 現在の株情報を渡して修正依頼
 label.textContent = '📋 株価・コード修正プロンプト（AIにコピペ）';
+const isUSFlag = isUS;
 const stockInfo = (currentArticleData.stocks || []).map(function(s, i) {
-return (i+1) + '. ' + s.name + ' / コード: ' + s.code + ' / 現在株価: ' + s.currentPrice + '円';
+return (i+1) + '. ' + s.name + ' / コード: ' + s.code + ' / 現在株価: ' + (isUSFlag ? '$' : '') + s.currentPrice + (isUSFlag ? '' : '円');
 }).join('\n');
+const site = isUS ? 'Yahoo Finance(finance.yahoo.com)' : 'Yahooファイナンス(finance.yahoo.co.jp)';
+const limit = isUS ? '$10未満' : '1000円未満';
 const lines = [
 '【株価・コード修正依頼】',
 '以下の銘柄情報をウェブ検索で確認し、正しい情報に修正してください。',
@@ -933,15 +1314,16 @@ const lines = [
 stockInfo,
 '',
 '【確認事項】',
-'・Yahooファイナンス(finance.yahoo.co.jp)で各銘柄の現在株価を確認',
-'・株価が1000円未満であること（超えていたら「対象外」と記載）',
-'・証券コードが正しいか確認',
+'・' + site + 'で各銘柄の現在株価を確認',
+'・株価が' + limit + 'であること（超えていたら「対象外」と記載）',
+'・証券コード/ティッカーが正しいか確認',
 '',
 '【出力形式】JSONのみ。修正のある銘柄だけ返す。',
 '{"stocks":[{"name":"企業名","code":"修正後コード","currentPrice":修正後株価,"prediction":"up","reasoning":"既存のreasoningをそのまま維持"}]}'
 ];
 output.value = lines.join('\n');
 }
+
 window.scrollTo({ top: document.getElementById('retakeArea').offsetTop - 20, behavior: 'smooth' });
 }
 
@@ -952,89 +1334,61 @@ try {
 const obj = JSON.parse(txt);
 const newStocks = obj.stocks || (Array.isArray(obj) ? obj : null);
 if (!newStocks || newStocks.length === 0) throw new Error('"stocks" 配列が見つかりません');
+
 if (retakeMode === 'all') {
-currentArticleData.stocks = newStocks;
+  // 丸ごと入れ替え
+  currentArticleData.stocks = newStocks;
 } else {
-newStocks.forEach(function(ns) {
-const idx = (currentArticleData.stocks || []).findIndex(function(s) {
-return s.name === ns.name || s.code === ns.code;
-});
-if (idx >= 0) {
-if (!ns.reasoning) ns.reasoning = currentArticleData.stocks[idx].reasoning;
-currentArticleData.stocks[idx] = ns;
-} else {
-currentArticleData.stocks.push(ns);
+  // 個別修正：nameかcodeで既存銘柄を検索して上書き
+  newStocks.forEach(function(ns) {
+    const idx = (currentArticleData.stocks || []).findIndex(function(s) {
+      return s.name === ns.name || s.code === ns.code;
+    });
+    if (idx >= 0) {
+      // reasoningが空なら既存を維持
+      if (!ns.reasoning) ns.reasoning = currentArticleData.stocks[idx].reasoning;
+      currentArticleData.stocks[idx] = ns;
+    } else {
+      // 見つからなければ追加
+      currentArticleData.stocks.push(ns);
+    }
+  });
 }
-});
-}
+
+// プレビュー更新
 displayPreview(currentArticleData);
 _buildFactCheckPrompt();
 document.getElementById('retakeArea').style.display = 'none';
 document.getElementById('retakeJsonInput').value = '';
+
+// 成功メッセージ
 const diff = document.getElementById('diffDisplay');
 diff.style.display = 'block';
 diff.innerHTML = retakeMode === 'all'
-? '🔁 選出株を入れ替えました: ' + newStocks.map(function(s){ return s.name + '(' + s.code + ')'; }).join(', ')
-: '✏️ 株情報を修正しました: ' + newStocks.map(function(s){ return s.name + ' → ' + s.code + ' / ' + s.currentPrice; }).join(', ');
+  ? '🔁 選出株を入れ替えました: ' + newStocks.map(function(s){ return s.name + '(' + s.code + ')'; }).join(', ')
+  : '✏️ 株情報を修正しました: ' + newStocks.map(function(s){ return s.name + ' → ' + s.code + ' / ' + s.currentPrice; }).join(', ');
+
 window.scrollTo({ top: document.getElementById('previewCard').offsetTop - 20, behavior: 'smooth' });
+
 } catch(e) { alert('JSONの読み込み失敗:\n' + e.message); }
 }
-
-async function copyText(id) {
-const text = document.getElementById(id).value;
-try { await navigator.clipboard.writeText(text); alert('コピーしました'); }
-catch { const el = document.getElementById(id); el.select(); document.execCommand('copy'); alert('コピーしました'); }
-}
-
-// ─── イベント登録 ───
-document.getElementById('generateArticleBtn').onclick = generatePrompt;
-document.getElementById('copyPromptBtn').onclick = () => copyText('promptOutput');
-document.getElementById('applyArticleBtn').onclick = () => loadArticleFromJson(document.getElementById('jsonInput').value);
-document.getElementById('copyFactCheckBtn').onclick = () => copyText('factCheckPrompt');
-document.getElementById('applyRevisedBtn').onclick = applyRevised;
-document.getElementById('approveFinalBtn').onclick = approveFinal;
-document.getElementById('copyXBtn').onclick = () => copyText('xOutput');
-document.getElementById('copyNoteBtn').onclick = () => copyText('noteOutput');
-document.getElementById('clearHistoryBtn').onclick = () => {
-if (confirm('使用履歴をすべて削除しますか？')) { usedScenarios = []; saveAllData(); renderUsedHistory(); }
-};
-document.getElementById('historyToggle').onclick = function() {
-const body = document.getElementById('historyBody');
-const isOpen = body.style.display !== 'none';
-body.style.display = isOpen ? 'none' : 'block';
-this.classList.toggle('open', !isOpen);
-};
-
-// ─── AIセレクター ───
-let selectedAI_A = 'Gemini';
-let selectedAI_B = 'Gemini';
-
-function initAiSelectors() {
-document.querySelectorAll('#aiSelectorA .ai-btn').forEach(btn => {
-btn.onclick = () => {
-document.querySelectorAll('#aiSelectorA .ai-btn').forEach(b => b.classList.remove('selected'));
-btn.classList.add('selected');
-selectedAI_A = btn.dataset.ai;
-};
-});
-document.querySelectorAll('#aiSelectorB .ai-btn').forEach(btn => {
-btn.onclick = () => {
-document.querySelectorAll('#aiSelectorB .ai-btn').forEach(b => b.classList.remove('selected'));
-btn.classList.add('selected');
-selectedAI_B = btn.dataset.ai;
-};
-});
-}
-
-// ─── ステップナビ ───
-[1,2,3,4].forEach(n => {
-const dot = document.getElementById('sd' + n);
-if (dot) dot.addEventListener('click', () => navigateToStep(n));
-});
 
 document.getElementById('generateStockPromptBtn').onclick = generateStockPrompt;
 document.getElementById('copyStockPromptBtn').onclick = () => copyText('stockPromptOutput');
 document.getElementById('applyStockBtn').onclick = applyStockAndMerge;
+document.getElementById('generateScoringPromptBtn').onclick = generateScoringPrompt;
+document.getElementById('copyScoringPromptBtn').onclick = function() { copyText('scoringPromptOutput'); };
+document.getElementById('applyScoringBtn').onclick = applyScoring;
+document.getElementById('skipScoringBtn').onclick = function() {
+document.getElementById('scoringCard').style.display = 'none';
+_goToStockSearch();
+};
+document.querySelectorAll('#aiSelectorScore .ai-btn').forEach(function(btn) {
+btn.onclick = function() {
+document.querySelectorAll('#aiSelectorScore .ai-btn').forEach(function(b) { b.classList.remove('selected'); });
+btn.classList.add('selected');
+};
+});
 document.getElementById('retakeAllStocksBtn').onclick = function() { showRetakeArea('all'); };
 document.getElementById('retakeStockInfoBtn').onclick = function() { showRetakeArea('info'); };
 document.getElementById('copyRetakePromptBtn').onclick = function() { copyText('retakePromptOutput'); };
