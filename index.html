@@ -144,7 +144,7 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
     <button class="ai-btn" data-ai="ChatGPT">ChatGPT</button>
     <button class="ai-btn" data-ai="Claude">Claude</button>
   </div>
-  <button id="generateArticleBtn" class="btn-primary">① 記事生成プロンプトを作る</button>
+  <button id="generateArticleBtn" class="btn-primary" onclick="generatePrompt()">① 記事生成プロンプトを作る</button>
   <div id="promptArea" style="display:none;margin-top:14px;">
     <div class="label" style="margin-top:0;">📋 AIにコピペするプロンプト（株指定なし・記事のみ）</div>
     <textarea id="promptOutput" rows="8" readonly></textarea>
