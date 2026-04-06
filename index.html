@@ -106,7 +106,7 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
 </div>
 
 <div style="text-align:center;margin-bottom:16px;">
-  <a href="tracker_jp.html" style="display:inline-block;background:#f0f4fa;color:#1e3c72;border:1px solid #bcd0ed;border-radius:30px;padding:8px 18px;font-size:13px;font-weight:600;text-decoration:none;">予測トラッカーを見る</a>
+  <a href="tracker.html" style="display:inline-block;background:#f0f4fa;color:#1e3c72;border:1px solid #bcd0ed;border-radius:30px;padding:8px 18px;font-size:13px;font-weight:600;text-decoration:none;">予測トラッカーを見る</a>
 </div>
 <div class="step-nav">
   <div class="step-dot" id="sd1"><div class="step-circle active" id="sc1">1</div><div class="step-label active" id="sl1">生成</div></div>
@@ -326,7 +326,7 @@ hr { margin: 16px 0; border: 0; height: 1px; background: #e2e8f0; }
     <button id="copyNoteBtn" class="btn-secondary">note全文をコピー</button>
   </div>
   <div style="margin-top:16px;background:#f0f4fa;border:1px solid #bcd0ed;border-radius:14px;padding:14px;font-size:13px;color:#1e3c72;">
-    予測データを記録しました。 <a href="tracker_jp.html" style="color:#1e3c72;font-weight:700;">予測トラッカーで確認する</a>
+    予測データを記録しました。 <a href="tracker.html" style="color:#1e3c72;font-weight:700;">予測トラッカーで確認する</a>
   </div>
 </div>
 
@@ -951,6 +951,9 @@ var lines = [
 '・元記事の良い部分は残す',
 '・弱点のみ改善する（全面的に別物にしない）',
 '・「修正」ではなく「読みやすく再構築」する',
+'・文章内でダブルクォート（"）は一切使用禁止',
+'・強調・比喩・会話表現は必ず「」を使用する',
+'・JSONとして出力する際、文字列内に未エスケープの"を含めないこと',
 '',
 '【改善対象】',
 improvementPoints,
